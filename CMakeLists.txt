@@ -31,7 +31,7 @@ set(picasso_arm_HDRS
   include/picasso_arm.h
 )
 
-add_library(picasso_arm ${picasso_arm_SRCS})
+add_library(picasso_arm ${picasso_arm_SRCS} ${picasso_arm_HDRS})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
 
 # Eyes
@@ -45,7 +45,7 @@ set(picasso_eyes_HDRS
   include/picasso_eyes.h
 )
 
-add_library(picasso_eyes ${picasso_eyes_SRCS})
+add_library(picasso_eyes ${picasso_eyes_SRCS} ${picasso_eyes_HDRS})
 ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
 
 # UI
@@ -59,7 +59,7 @@ set(picasso_ui_HDRS
   include/picasso_ui.h
 )
 
-add_library(picasso_ui ${picasso_ui_SRCS})
+add_library(picasso_ui ${picasso_ui_SRCS} ${picasso_ui_HDRS})
 ament_target_dependencies(picasso_ui ${picasso_ui_dep})
 
 # Make executable
@@ -73,7 +73,7 @@ set(picasso_core_HDRS
   
 )
 
-add_executable(picasso_core ${picasso_core_SRCS})
+add_executable(picasso_core ${picasso_core_SRCS} ${picasso_core_HDRS})
 ament_target_dependencies(picasso_core ${picasso_core_dep})
 target_link_libraries(picasso_core picasso_arm picasso_eyes picasso_ui)
 
