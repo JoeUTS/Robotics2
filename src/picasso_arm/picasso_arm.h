@@ -4,7 +4,10 @@
 #include <rclcpp/rclcpp.hpp>
 
 class PicassoArm : public rclcpp::Node {
+public:
+  PicassoArm(void);
 
+private:
 };
 
 #endif // PICASSOARM_H

@@ -4,6 +4,10 @@
 #include <rclcpp/rclcpp.hpp>
 
 class PicassoUI : public rclcpp::Node {
+public:
+  PicassoUI(void);
+
+private:
 
 };
 

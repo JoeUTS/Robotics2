@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(PicassoBot)
+project(picasso_bot)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -14,69 +14,76 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
+
+#find_package(librealsense2  REQUIRED)
+
 
 # Add submodules
 # Arm
-set(PicassoArm_dep "ament_index_cpp" "rclcpp")
+set(picasso_arm_dep "ament_index_cpp" "rclcpp")
 
-set(PicassoArm_SRCS
-  src/PicassoArm.cpp
+set(picasso_arm_SRCS
+  src/picasso_arm/picasso_arm.cpp
 )
 
-set(PicassoArm_HDRS
-  include/PicassoArm.h
+set(picasso_arm_HDRS
+  include/picasso_arm.h
 )
 
-add_library(PicassoArm ${PicassoArm_SRCS} ${PicassoArm_HDRS}) # If any issues, remove the headers argument.
-ament_target_dependencies(PicassoArm ${PicassoArm_dep})
+add_library(picasso_arm ${picasso_arm_SRCS}) # If any issues, remove the headers argument.
+ament_target_dependencies(picasso_arm ${picasso_arm_dep})
 
 # Eyes
-set(PicassoEyes_dep "ament_index_cpp" "rclcpp")
+set(picasso_eyes_dep "ament_index_cpp" "rclcpp" "sensor_msgs" "OpenCV")
 
-set(PicassoEyes_SRCS
-  src/PicassoEyes.cpp
+set(picasso_eyes_SRCS
+  src/picasso_eyes/picasso_eyes.cpp
 )
 
-set(PicassoEyes_HDRS
-  include/PicassoEyes.h
+set(picasso_eyes_HDRS
+  include/picasso_eyes.h
 )
 
-add_library(PicassoEyes ${PicassoEyes_SRCS} ${PicassoEyes_HDRS}) # If any issues, remove the headers argument.
-ament_target_dependencies(PicassoEyes ${PicassoEyes_dep})
+add_library(picasso_eyes ${picasso_eyes_SRCS}) # If any issues, remove the headers argument.
+ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
 
 # UI
-set(PicassoUI_dep "ament_index_cpp" "rclcpp")
+set(picasso_ui_dep "ament_index_cpp" "rclcpp")
 
-set(PicassoUI_SRCS
-  src/PicassoUI.cpp
+set(picasso_ui_SRCS
+  src/picasso_ui/picasso_ui.cpp
 )
 
-set(PicassoUI_HDRS
-  include/PicassoUI.h
+set(picasso_ui_HDRS
+  include/picasso_ui.h
 )
 
-add_library(PicassoUI ${PicassoUI_SRCS} ${PicassoUI_HDRS}) # If any issues, remove the headers argument.
-ament_target_dependencies(PicassoUI ${PicassoUI_dep})
+add_library(picasso_ui ${picasso_ui_SRCS}) # If any issues, remove the headers argument.
+ament_target_dependencies(picasso_ui ${picasso_ui_dep})
 
 
-# Make executables
-set(PicassoBot_dep "ament_index_cpp" "rclcpp")
+# Make executable
+set(picasso_core_dep "ament_index_cpp" "rclcpp")
 
-set(PicassoBot_SRCS
+set(picasso_core_SRCS
   src/main.cpp
 )
 
-set(PicassoBot_HDRS
+set(picasso_core_HDRS
   
 )
 
-add_executable(PicassoBot ${PicassoBot_SRCS} ${PicassoBot_HDRS}) # If any issues, remove the headers argument.
+add_executable(picasso_core ${picasso_core_SRCS}) # If any issues, remove the headers argument.
+ament_target_dependencies(picasso_core ${picasso_core_dep})
+target_link_libraries(picasso_core picasso_arm picasso_eyes picasso_ui)
 
 install(TARGETS
-  PicassoArm
-  PicassoEyes
-  PicassoUI
-  PicassoBot
+  picasso_arm
+  picasso_eyes
+  picasso_ui
+  picasso_core
   DESTINATION lib/${PROJECT_NAME})
 
 install(
@@ -100,5 +107,7 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_dependencies(rosidl_default_runtime)
 
 ament_package()
