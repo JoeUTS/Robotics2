@@ -19,7 +19,6 @@ find_package(OpenCV REQUIRED)
 
 #find_package(librealsense2  REQUIRED)
 
-
 # Add submodules
 # Arm
 set(picasso_arm_dep "ament_index_cpp" "rclcpp")
@@ -32,7 +31,7 @@ set(picasso_arm_HDRS
   include/picasso_arm.h
 )
 
-add_library(picasso_arm ${picasso_arm_SRCS}) # If any issues, remove the headers argument.
+add_library(picasso_arm ${picasso_arm_SRCS})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
 
 # Eyes
@@ -46,7 +45,7 @@ set(picasso_eyes_HDRS
   include/picasso_eyes.h
 )
 
-add_library(picasso_eyes ${picasso_eyes_SRCS}) # If any issues, remove the headers argument.
+add_library(picasso_eyes ${picasso_eyes_SRCS})
 ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
 
 # UI
@@ -60,9 +59,8 @@ set(picasso_ui_HDRS
   include/picasso_ui.h
 )
 
-add_library(picasso_ui ${picasso_ui_SRCS}) # If any issues, remove the headers argument.
+add_library(picasso_ui ${picasso_ui_SRCS})
 ament_target_dependencies(picasso_ui ${picasso_ui_dep})
-
 
 # Make executable
 set(picasso_core_dep "ament_index_cpp" "rclcpp")
@@ -75,7 +73,7 @@ set(picasso_core_HDRS
   
 )
 
-add_executable(picasso_core ${picasso_core_SRCS}) # If any issues, remove the headers argument.
+add_executable(picasso_core ${picasso_core_SRCS})
 ament_target_dependencies(picasso_core ${picasso_core_dep})
 target_link_libraries(picasso_core picasso_arm picasso_eyes picasso_ui)
 
@@ -94,7 +92,6 @@ install(
 
   DESTINATION share/${PROJECT_NAME}
 )
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
