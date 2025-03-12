@@ -1,9 +1,9 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "picasso_arm.h"
-#include "picasso_eyes.h"
-#include "picasso_ui.h"
+#include "picasso_arm/picasso_arm.h"
+#include "picasso_eyes/picasso_eyes.h"
+#include "picasso_ui/picasso_ui.h"
 
 int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
