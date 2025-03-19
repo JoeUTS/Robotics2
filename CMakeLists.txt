@@ -12,11 +12,19 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 # find dependencies
+# Core
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(sensor_msgs REQUIRED)
+
+
+# Eyes
 find_package(OpenCV REQUIRED)
+find_package(sensor_msgs REQUIRED)
 #find_package(librealsense2 REQUIRED)
+
+# Arm
+
+# UI
 
 # Add include directories
 include_directories(
