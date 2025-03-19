@@ -1,4 +1,10 @@
-Robotics2.code-workspace
+# local workspace settings
+*.code-workspace
 .vscode/*
-rosbags/*
+
+# build files
 build/*
+
+# file types
+*.zip
+*.bag
