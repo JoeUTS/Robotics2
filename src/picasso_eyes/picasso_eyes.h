@@ -6,6 +6,8 @@
 
 #include <librealsense2/rs.hpp>
 
+#include "imageController.h"
+
 /*
 Camera is realsense D435i
 
@@ -45,9 +47,11 @@ public:
   PicassoEyes(void);
 
 private:
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subImage_; // Camera RGB image subscriber
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subCameraImage_; // Camera RGB image subscriber
 
-  sensor_msgs::msg::Image msgimage_;  // Holds last received image.
+  std::shared_ptr<imageController> imageController_ = NULL;
+
+  void cameraImageCallback(const sensor_msgs::msg::Image::SharedPtr incomingMsg);
 };
 
 #endif // PICASSOEYES_H

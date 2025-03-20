@@ -11,9 +11,9 @@ int main(int argc, char* argv[]) {
     auto node = std::make_shared<rclcpp::Node>("picasso_bot");  // Added by AI - Is this best practice?
     
     // Do we want to have each of these in their own node?
-    auto arm = std::make_shared<PicassoArm>(node); 
+    //auto arm = std::make_shared<PicassoArm>(node); 
     auto eyes = std::make_shared<PicassoEyes>(node);
-    auto ui = std::make_shared<PicassoUI>(node);
+    //auto ui = std::make_shared<PicassoUI>(node);
 
     rclcpp::executors::MultiThreadedExecutor executor;  // Added by AI - what is this?
     executor.add_node(node);

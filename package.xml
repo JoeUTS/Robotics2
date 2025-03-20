@@ -10,11 +10,19 @@
   <!-- core -->
   <buildtool_depend>ament_cmake</buildtool_depend>
   <build_depend>rclcpp</build_depend>
+  <!--<build_depend>tf2</build_depend>-->
+  <!--<build_depend>tf2_ros</build_depend>-->
 
 
   <!-- eyes -->
   <build_depend>libopencv-dev</build_depend>
+  <build_depend>image_transport</build_depend>
+  <build_depend>cv_bridge</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  <build_depend>librealsense2</build_depend>
+  <build_depend>realsense2_camera</build_depend>
+  <build_depend>realsense2_camera_msgs</build_depend>
+  <build_depend>realsense2_description</build_depend>
   
   <!-- arm -->
 
@@ -22,10 +30,18 @@
 
   <!-- core -->
   <exec_depend>rclcpp</exec_depend>
+  <!--<exec_depend>tf2</exec_depend>-->
+  <!--<exec_depend>tf2_ros</exec_depend>-->
 
   <!-- eyes -->
   <exec_depend>libopencv-dev</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>librealsense2</exec_depend>
+  <exec_depend>realsense2_camera</exec_depend>
+  <exec_depend>realsense2_camera_msgs</exec_depend>
+  <exec_depend>realsense2_description</exec_depend>
 
   <!-- arm -->
 
@@ -36,6 +52,7 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
+  <exec_depend>launch_ros</exec_depend>
   <export>
     <build_type>ament_cmake</build_type>
   </export>

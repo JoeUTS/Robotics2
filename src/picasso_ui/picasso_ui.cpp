@@ -1,5 +1,5 @@
 #include "picasso_ui.h"
 
-PicassoUI::PicassoUI(void) {
+PicassoUI::PicassoUI(void) : Node("picasso_ui") {
 
 }
