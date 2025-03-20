@@ -10,9 +10,11 @@
 Camera is realsense D435i
 
 // Camera node: (Will need to launch this with launcher)
-ros2 launch realsense2_camera rs_launch.py
+ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true
 // alternative:
 ros2 run realsense2_camera realsense2_camera_node
+// from rosbag
+ros2 launch realsense2_camera rs_launch.py rosbag_filename:="/full/path/to/rosbag/file" align_depth.enable:=true
 
 
 // Default topic list:
