@@ -15,6 +15,7 @@ endif()
 # Core
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 #find_package(tf2_ros REQUIRED) # not needed yet but will likely be
 #find_package(tf2 REQUIRED)     # not needed yet but will likely be
 
@@ -44,10 +45,11 @@ set(picasso_arm_dep
   )
 
 set(picasso_arm_src
+  src/picasso_arm/arm_main.cpp
   src/picasso_arm/picasso_arm.cpp
 )
 
-add_library(picasso_arm ${picasso_arm_src})
+add_executable(picasso_arm ${picasso_arm_src})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
 
 # Eyes
@@ -59,20 +61,19 @@ set(picasso_eyes_dep
   cv_bridge
   image_transport
   realsense2
-  realsense2_camera
-  realsense2_camera_msgs
-  realsense2_description 
   #tf2
   #tf2_ros
   )
 
 set(picasso_eyes_src
+  src/picasso_eyes/eyes_main.cpp
   src/picasso_eyes/picasso_eyes.cpp
-  src/picasso_eyes/cameraImage.cpp
+  src/picasso_eyes/image_controller.cpp
 )
 
-add_library(picasso_eyes ${picasso_eyes_src})
+add_executable(picasso_eyes ${picasso_eyes_src})
 ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
+#target_link_libraries(picasso_eyes ) # probably not needed. Holding onto incase needing to make imageControler a static library.
 
 # UI
 set(picasso_ui_dep 
@@ -81,27 +82,18 @@ set(picasso_ui_dep
   )
 
 set (picasso_ui_src
-src/picasso_ui/picasso_ui.cpp
+  src/picasso_ui/ui_main.cpp
+  src/picasso_ui/picasso_ui.cpp
 )
 
-add_library(picasso_ui ${picasso_ui_src})
+add_executable(picasso_ui ${picasso_ui_src})
 ament_target_dependencies(picasso_ui ${picasso_ui_dep})
 
-# Make executable
-set(picasso_core_dep 
-  ament_index_cpp 
-  rclcpp
-  )
-
-add_executable(picasso_core src/main.cpp)
-ament_target_dependencies(picasso_core ${picasso_core_dep})
-target_link_libraries(picasso_core picasso_arm picasso_eyes picasso_ui)
 
 install(TARGETS
   picasso_arm
   picasso_eyes
   picasso_ui
-  picasso_core
   DESTINATION lib/${PROJECT_NAME})
 
 install(

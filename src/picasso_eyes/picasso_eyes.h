@@ -2,11 +2,12 @@
 #define PICASSOEYES_H
 
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
+#include "sensor_msgs/msg/image.hpp"
+#include "std_msgs/msg/header.hpp"
 
 #include <librealsense2/rs.hpp>
 
-#include "imageController.h"
+#include "image_controller.h"
 
 /*
 Camera is realsense D435i
