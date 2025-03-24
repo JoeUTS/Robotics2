@@ -5,6 +5,9 @@
 # build files
 build/*
 
+# log files
+log/*
+
 # file types
 *.zip
 *.bag
