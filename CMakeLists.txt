@@ -25,7 +25,9 @@ find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(realsense2 REQUIRED)
+find_package(realsense2_camera_msgs REQUIRED)
 
 # Arm
 
@@ -57,10 +59,12 @@ set(picasso_eyes_dep
   ament_index_cpp
   rclcpp
   sensor_msgs
+  geometry_msgs
   OpenCV
   cv_bridge
   image_transport
   realsense2
+  realsense2_camera_msgs
   #tf2
   #tf2_ros
   )

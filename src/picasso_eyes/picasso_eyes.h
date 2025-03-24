@@ -1,11 +1,16 @@
 #ifndef PICASSOEYES_H
 #define PICASSOEYES_H
 
-#include <rclcpp/rclcpp.hpp>
-#include "sensor_msgs/msg/image.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/logger.hpp"
 #include "std_msgs/msg/header.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include "geometry_msgs/msg/pose_array.hpp"
+#include "geometry_msgs/msg/transform.hpp"
 
-#include <librealsense2/rs.hpp>
+#include <realsense2_camera_msgs/msg/rgbd.hpp>
+
+#include <string>
 
 #include "image_controller.h"
 
@@ -13,9 +18,8 @@
 Camera is realsense D435i
 
 // Camera node: (Will need to launch this with launcher)
-ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true
-// alternative:
-ros2 run realsense2_camera realsense2_camera_node
+ros2 launch realsense2_camera rs_launch.py enable_rgbd:=true rgb_camera.color_profile:=640x480x30 depth_module.depth_profile:=640x480x30 enable_sync:=true align_depth.enable:=true enable_color:=true enable_depth:=true
+
 // from rosbag
 ros2 launch realsense2_camera rs_launch.py rosbag_filename:="/full/path/to/rosbag/file" align_depth.enable:=true
 
@@ -48,11 +52,15 @@ public:
   PicassoEyes(void);
 
 private:
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subCameraImage_; // Camera RGB image subscriber
+  rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr subCameraMsg_; // Camera RGB image subscriber
 
   std::shared_ptr<imageController> imageController_ = NULL;
 
-  void cameraImageCallback(const sensor_msgs::msg::Image::SharedPtr incomingMsg);
+  geometry_msgs::msg::PoseArray outputPoseArray_; // Holds copy of last generated pose array msg.
+
+  void cameraReceiveCallback(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg);
+
+  
 };
 
 #endif // PICASSOEYES_H
