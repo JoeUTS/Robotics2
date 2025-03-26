@@ -44,7 +44,7 @@ private:
   // Messages.
   realsense2_camera_msgs::msg::RGBD msgCameraimage_;  // Holds copy of last received image msg.
 
-  void generateArt(cv::Mat image);
+  void generateArt(void);
 
   /// @brief Convert image msg to cv::Mat.
   /// @param imageMsg sensor_msgs::msg::Image
@@ -60,7 +60,7 @@ private:
   /// @param image Input image. If multichannel, will turn to greyscale and blur.
   /// @param contours Detected contours.
   /// @param hierarchy Hierachy of contours.
-  void detectContour(cv::Mat &image, std::vector<std::vector<cv::Point>> &contours, std::vector<cv::Vec4i> &hierarchy);
+  void detectContour(cv::Mat image, std::vector<std::vector<cv::Point>> &contours, std::vector<cv::Vec4i> &hierarchy);
 
   /// @brief Find averate intensity of greyscale image.
   /// @param image Input image. If multichannel, will turn to greyscale and blur.

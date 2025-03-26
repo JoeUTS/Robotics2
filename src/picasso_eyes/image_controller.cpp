@@ -7,48 +7,92 @@ imageController::imageController(const realsense2_camera_msgs::msg::RGBD::Shared
 void imageController::updateCameraImage(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
   std::unique_lock<std::mutex> lck(mutex_);
   msgCameraimage_ = *incomingMsg;
-  cv::Mat originalImage = msg2Mat(msgCameraimage_.rgb);
   lck.unlock();
 
-  if (originalImage.empty() || detectionRunning_) {
+  if (!detectionRunning_) {
+    detectionRunning_ = true;
+    imageProcessThread_ = std::thread(&imageController::generateArt, this);
+    imageProcessThread_.detach();
+  }
+}
+
+void imageController::generateArt(void) {
+  const int kernalSize = 3;
+
+  std::unique_lock<std::mutex> lck(mutex_);
+  cv::Mat imageRGB = msg2Mat(msgCameraimage_.rgb);
+  cv::Mat imageDepth = msg2Mat(msgCameraimage_.depth);
+  lck.unlock();
+
+  if (imageRGB.empty() || imageDepth.empty()) {
+    detectionRunning_ = false;
     return;
   }
 
-  detectionRunning_ = true;
-  imageProcessThread_ = std::thread(&imageController::generateArt, this, cv::Mat(originalImage));
-  imageProcessThread_.detach();
-}
+  // Process images.
+  // Filter depth.
+  cv::Mat imageDepthBlur;
+  cv::GaussianBlur(imageDepth, imageDepthBlur, cv::Size(kernalSize, kernalSize), 0);
 
-void imageController::generateArt(cv::Mat image) {
-  // image into R, G and B channels.
-  cv::Mat channels[3];
-  std::vector<std::vector<cv::Point>> contoursGroup[3];
-  std::vector<cv::Vec4i> hierarchyGroup[3];
-  cv::split(image, channels);
-  cv::Mat contoursImage = cv::Mat(image.size(), false);
-  cv::Mat testImage[3];
+  // Make greyscale of RGB.
+  cv::Mat imageGrey;
+  cv::cvtColor(imageRGB, imageGrey, cv::COLOR_BGR2GRAY);
+  cv::GaussianBlur(imageGrey, imageGrey, cv::Size(kernalSize, kernalSize), 0);
+
+  // Extract color channels.
+  cv::Mat imageChannels[3];
+  cv::split(imageRGB, imageChannels);
 
   for (int i = 0; i < 3; i++) {
-    // Remove noise
-    cv::GaussianBlur(channels[i], channels[i], cv::Size(3, 3), 0);
-
-    // Detect contours
-    detectContour(channels[i], contoursGroup[i], hierarchyGroup[i]);
-
-    // Draw contours
-    cv::Scalar colour = {0, 0, 0};
-    colour[i] = 255;
-    int thickness = 1;
-
-    cv::drawContours(testImage[i], contoursGroup[i], -1, colour, thickness, 8, hierarchyGroup[i]);
+    cv::GaussianBlur(imageChannels[i], imageChannels[i], cv::Size(kernalSize, kernalSize), 0);
   }
 
-  displayImage(testImage[1]);
-  displayImage(testImage[2]);
-  displayImage(testImage[3]);
+  // Find face in image and get location.
+  // TO DO
 
-  //cv::destroyAllWindows();
-  //displayImage(contoursImage);
+  // Get depth at that location.
+  // TO DO
+
+  // Make depth masks.
+  // TO DO
+
+  // Remove background.
+  // TO DO
+
+  // Draw bounding box around face
+  // TO DO
+
+  // Detect contours for each channel + grey
+  std::vector<std::vector<cv::Point>> contoursGroup[4];
+  std::vector<cv::Vec4i> hierarchyGroup[4];
+  cv::Mat imageChannelEdges[4];
+
+  float thresh = 0.5;
+  for (int i = 0; i < 3; i++) {
+    imageChannelEdges[i] = imageChannels[i].clone();
+    edgeDetection(imageChannels[i], thresh);
+    detectContour(imageChannels[i], contoursGroup[i], hierarchyGroup[i]);
+  }
+
+  imageChannelEdges[3] = imageGrey.clone();
+  edgeDetection(imageChannels[3], thresh);
+  detectContour(imageChannelEdges[3], contoursGroup[3], hierarchyGroup[3]);
+
+  // Draw contours.
+  //cv::Mat imageContours = cv::Mat(imageGrey.size(), CV_8UC3, cv::Scalar(0));
+  cv::Mat imageContours = imageRGB.clone();
+
+  for (int i = 0; i < 3; i++) {
+    cv::Scalar colour = {0, 0, 0};
+    colour[i] = 255;
+    cv::drawContours(imageContours, contoursGroup[i], -1, colour, 1, 8, hierarchyGroup[i]);
+  }
+
+  cv::drawContours(imageContours, contoursGroup[3], -1, cv::Scalar(255), 1, 8, hierarchyGroup[3]);
+
+  cv::imshow("contours", imageContours);
+  cv::waitKey(1);
+
   detectionRunning_ = false;
 }
 
@@ -58,16 +102,36 @@ void imageController::displayImage(cv::Mat &image) {
 }
 
 cv::Mat imageController::msg2Mat(sensor_msgs::msg::Image &imageMsg) {
-  cv_bridge::CvImagePtr cv_ptr;
-  cv_ptr = cv_bridge::toCvCopy(imageMsg, imageMsg.encoding);
-  cv::Mat image = cv_ptr->image;
+  cv_bridge::CvImagePtr cvPtr;
+  cv::Mat image;
+
+  if (imageMsg.encoding == "16UC1" || imageMsg.encoding == "32FC1") {
+    // Depth image.
+    cvPtr = cv_bridge::toCvCopy(imageMsg);
+    image = cvPtr->image;
+    double min, max;
+    cv::minMaxLoc(image, &min, &max);
+    image.convertTo(image, CV_8UC1, 255.0 / max);
+
+  } else if (imageMsg.encoding == "mono8") {
+    // Grayscale image
+    cvPtr = cv_bridge::toCvCopy(imageMsg, "mono8");
+    image = cvPtr->image;
+
+  } else {
+    // Colour image.
+    // NOTE: Camera encoding says RGB but is actually BGR.
+    cvPtr = cv_bridge::toCvCopy(imageMsg, "bgr8");
+    image = cvPtr->image;
+  }
+
   return image;
 }
 
 void imageController::edgeDetection(cv::Mat &image, float thresh) {
   // If image is multichannel, assuming has not been processed.
   if (image.channels() > 1) {
-    cv::cvtColor(image, image, cv::COLOR_RGB2GRAY);
+    cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
     cv::GaussianBlur(image, image, cv::Size(3, 3), 0);
   }
 
@@ -81,7 +145,7 @@ void imageController::edgeDetection(cv::Mat &image, float thresh) {
   cv::Canny(image, image, lower, upper);
 }
 
-void imageController::detectContour(cv::Mat &image, std::vector<std::vector<cv::Point>> &contours, std::vector<cv::Vec4i> &hierarchy) {
+void imageController::detectContour(cv::Mat image, std::vector<std::vector<cv::Point>> &contours, std::vector<cv::Vec4i> &hierarchy) {
   // If image is multichannel, assuming has not been processed.
   if (image.channels() > 1) {
     cv::cvtColor(image, image, cv::COLOR_RGB2GRAY);
@@ -89,7 +153,7 @@ void imageController::detectContour(cv::Mat &image, std::vector<std::vector<cv::
   }
 
   int ave = findAverageIntensity(image);
-  threshold(image, image, ave, 255, cv::THRESH_BINARY);
+  cv::threshold(image, image, ave, 255, cv::THRESH_BINARY);
 
   findContours(image, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
 }
@@ -101,15 +165,6 @@ int imageController::findAverageIntensity(cv::Mat &image) {
     cv::GaussianBlur(image, image, cv::Size(3, 3), 0);
   }
 
-  // Find average pixel value.
-  double ave = 0;
-  for (int y = 0; y < image.rows; y++) {
-    for (int x = 0; x < image.cols; x++) {    
-      ave += image.at<char>(x, y);
-    }
-  }
-
-  ave /= image.total();
-
-  return round(ave);
+  cv::Scalar mean = cv::mean(image);
+  return round(mean[0]);
 }
