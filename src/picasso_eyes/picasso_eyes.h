@@ -23,6 +23,10 @@ ros2 launch realsense2_camera rs_launch.py enable_rgbd:=true rgb_camera.color_pr
 // from rosbag
 ros2 launch realsense2_camera rs_launch.py rosbag_filename:="/full/path/to/rosbag/file" align_depth.enable:=true
 
+// arm
+ros2 launch ur_robot_driver ur_control.launch.py ur_type:=ur3e robot_ip:=192.168.1.102 launch_rviz:=false initial_joint_controller:=joint_trajectory_controller use_fake_hardware:=true
+
+ros2 launch ur_moveit_config ur_moveit.launch.py ur_type:=ur3e launch_rviz:=true use_fake_hardware:=true
 
 // Default topic list:
 https://dev.intelrealsense.com/docs/ros2-wrapper
