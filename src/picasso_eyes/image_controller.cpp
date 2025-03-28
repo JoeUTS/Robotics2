@@ -1,7 +1,13 @@
 #include "image_controller.h"
 
 imageController::imageController(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) : msgCameraimage_(*incomingMsg) {
-  lsd_ = cv::createLineSegmentDetector();
+  // Get paths to config files.
+  std::string packageShareDir = ament_index_cpp::get_package_share_directory("picasso_bot");
+  std::string pathImageClasses = packageShareDir + "/config/coco-classes.txt";
+  std::string pathYOLO = packageShareDir + "/config/yolov8m-seg.onnx";
+
+  // Load config files.
+  loadImageClassList(pathImageClasses);
 }
 
 void imageController::updateCameraImage(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
@@ -61,13 +67,13 @@ void imageController::generateArt(void) {
 
   // Draw bounding box around face
   // TO DO
-
+  
   // Detect contours for each channel + grey
-  std::vector<std::vector<cv::Point>> contoursGroup[4];
+  std::vector<std::vector<cv::Point>> contoursGroup[4]; // 
   std::vector<cv::Vec4i> hierarchyGroup[4];
   cv::Mat imageChannelEdges[4];
 
-  float thresh = 0.5;
+  float thresh = 0.99;
   for (int i = 0; i < 3; i++) {
     imageChannelEdges[i] = imageChannels[i].clone();
     edgeDetection(imageChannels[i], thresh);
@@ -77,6 +83,12 @@ void imageController::generateArt(void) {
   imageChannelEdges[3] = imageGrey.clone();
   edgeDetection(imageChannels[3], thresh);
   detectContour(imageChannelEdges[3], contoursGroup[3], hierarchyGroup[3]);
+
+  // Generate toolpaths.
+  for (std::vector<cv::Point> &contour : contoursGroup[3]) {
+    std::shared_ptr<Contour> contourPtr = Contour::create(toolPaths_.size(),contour);
+    toolPaths_.push_back(contourPtr);
+  }
 
   // Draw contours.
   //cv::Mat imageContours = cv::Mat(imageGrey.size(), CV_8UC3, cv::Scalar(0));
@@ -94,11 +106,6 @@ void imageController::generateArt(void) {
   cv::waitKey(1);
 
   detectionRunning_ = false;
-}
-
-void imageController::displayImage(cv::Mat &image) {
-  cv::imshow(testWin, image);
-  cv::waitKey(0);
 }
 
 cv::Mat imageController::msg2Mat(sensor_msgs::msg::Image &imageMsg) {
@@ -168,3 +175,13 @@ int imageController::findAverageIntensity(cv::Mat &image) {
   cv::Scalar mean = cv::mean(image);
   return round(mean[0]);
 }
+
+void imageController::loadImageClassList(std::string path) {
+  std::ifstream ifs(path);
+
+  std::string line;
+  while (getline(ifs, line)) {
+    classList_.push_back(line);
+  }
+}
+

@@ -2,13 +2,21 @@
 #define IMAGECONTROLLER_H
 
 #include <mutex>
+#include <array>
+#include <map>
+#include <vector>
 #include <string>
 #include <thread>
+#include <fstream>
+#include <filesystem>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/logger.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
 
 #include "sensor_msgs/msg/image.hpp"
+#include "geometry_msgs/msg/pose_array.hpp"
+#include "geometry_msgs/msg/pose.hpp"
 
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rsutil.h>
@@ -19,6 +27,28 @@
 #include <image_transport/image_transport.hpp>  // Using image_transport allows us to publish and subscribe to compressed image streams in ROS2
 #include <cv_bridge/cv_bridge.h>
 
+#include "Contour.h"
+
+struct DetectedObject {
+    int class_id;
+    float confidence;
+    cv::Rect box;
+};
+
+const std::array<cv::Scalar, 8> COLOURS = {cv::Scalar(0, 0, 0),
+                                          cv::Scalar(0, 0, 255),
+                                          cv::Scalar(0, 255, 0),
+                                          cv::Scalar(255, 0, 0),
+                                          cv::Scalar(0, 255, 255),
+                                          cv::Scalar(255, 0, 255),
+                                          cv::Scalar(255, 255, 0),
+                                          cv::Scalar(255, 255, 255)
+};
+
+// TO DO:
+// - Add function to set toolpaths.
+// - Add function to clear toolpaths.
+// - Add function to get next toolpath. (This will later be used with traveling salesman problem.)
 
 class imageController {
 public:
@@ -28,18 +58,16 @@ public:
   /// @param incomingMsg 
   void updateCameraImage(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg);
 
-  // Display given image.
-  void displayImage(cv::Mat &image);
-
 private:
-  bool detectionRunning_ = false;
-  std::string testWin = "testWin";
-
+  // system objects.
+  std::mutex mutex_;  // Mutex.
+  bool detectionRunning_ = false; // True when detection loop is active.
   std::thread imageProcessThread_;
 
-  // system objects.
-  cv::Ptr<cv::LineSegmentDetector> lsd_;  // Line segment detector object.
-  std::mutex mutex_;  // Mutex.
+  std::vector<std::shared_ptr<Contour>> toolPaths_;
+  
+  // Object Detection.
+  std::vector<std::string> classList_; // Image classifier classes.
 
   // Messages.
   realsense2_camera_msgs::msg::RGBD msgCameraimage_;  // Holds copy of last received image msg.
@@ -66,6 +94,10 @@ private:
   /// @param image Input image. If multichannel, will turn to greyscale and blur.
   /// @return [0-255]. Average intensity.
   int findAverageIntensity(cv::Mat &image);
+
+  void loadImageClassList(std::string path);
+
+  void setColourList(void);
 };
 
 #endif // IMAGECONTROLLER_H

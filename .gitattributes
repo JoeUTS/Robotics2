@@ -1,3 +1,4 @@
 # Allows for large file size uploads of these types.
 #*.bag filter=lfs diff=lfs merge=lfs -text
 #*.zip filter=lfs diff=lfs merge=lfs -text
+*.onnx filter=lfs diff=lfs merge=lfs -text
