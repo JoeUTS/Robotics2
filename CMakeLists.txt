@@ -27,6 +27,7 @@ find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package(realsense2_camera_msgs REQUIRED)
 
@@ -61,6 +62,7 @@ set(picasso_eyes_dep
   rclcpp
   sensor_msgs
   geometry_msgs
+  vizualization_msgs
   OpenCV
   cv_bridge
   image_transport

@@ -3,14 +3,22 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/logger.hpp"
+
 #include "std_msgs/msg/header.hpp"
+
 #include "sensor_msgs/msg/image.hpp"
+
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/transform.hpp"
+
+#include "visualization_msgs/msg/marker.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
 
 #include <realsense2_camera_msgs/msg/rgbd.hpp>
 
 #include <string>
+#include <thread>
+#include <map>
 
 #include "image_controller.h"
 
@@ -56,6 +64,9 @@ public:
   PicassoEyes(void);
 
 private:
+  bool generationRunning_ = false;
+  std::thread imageProcessThread_;
+
   rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr subCameraMsg_; // Camera RGB image subscriber
 
   std::shared_ptr<imageController> imageController_ = NULL;
@@ -64,7 +75,18 @@ private:
 
   void cameraReceiveCallback(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg);
 
-  
+  /// @brief Generate toolpath from provided image.
+  /// @param image image to generate toolpath from.
+  /// @param blurPasses Number of blur passes to apply. \n
+  ///                   Note: This is applied prior to colour quantisation. \n
+  ///                   Note: Applies both a gaussian and median blur per pass.
+  /// @param blurKernalSize size of blur kernal.
+  /// @param colourSteps Number of colours to reduce to.
+  /// @return Vector of contours.
+  std::map<int, std::shared_ptr<Contour>> generateToolpath(cv::Mat &image, const int blurPasses, const int blurKernalSize, const int colourSteps);
+
+  /// @brief Temporary function for testing.
+  void tempFunction(void);
 };
 
 #endif // PICASSOEYES_H
