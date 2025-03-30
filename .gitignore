@@ -11,3 +11,6 @@ log/*
 # file types
 *.zip
 *.bag
+
+# temporarily adding AI model stuff
+*.onnx
