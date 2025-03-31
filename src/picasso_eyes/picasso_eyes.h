@@ -16,6 +16,10 @@
 
 #include <realsense2_camera_msgs/msg/rgbd.hpp>
 
+#include <tf2/LinearMath/Quaternion.hpp
+#include <tf2/LinearMath/Matrix3x3.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
 #include <string>
 #include <thread>
 #include <map>
@@ -87,6 +91,8 @@ private:
 
   /// @brief Temporary function for testing.
   void tempFunction(void);
+
+  geometry_msgs::msg::Quaternion rpyToQuaternion(const double roll, const double pitch, const double yaw);
 };
 
 #endif // PICASSOEYES_H

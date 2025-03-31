@@ -74,10 +74,17 @@ void PicassoEyes::tempFunction(void) {
   // Generate toolpaths visualization
   // TO DO
   visualization_msgs::msg::MarkerArray markerArrayToolpath;
-
+  unsigned int markerId = 0;
   for (std::shared_ptr<Contour> contour : toolPaths) {
     visualization_msgs::msg::Marker markerStart, markerEnd;
+    markerStart.header.frame_id = "camera_link";
+    markerStart.header.stamp = ros::Time::now();
+    markerStart.marker.ns = "toolpath";
+    markerStart.marker.id = markerId++;
     markerStart.type = visualization_msgs::msg::Marker::ARROW;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose = contour->getHead();
+
     // other stuff
     markerArrayToolpath.markers.push_back(markerStart);
 
@@ -111,4 +118,14 @@ void PicassoEyes::tempFunction(void) {
 
   // Perform TSP vs publish toolpaths
   // TO DO
+}
+
+geometry_msgs::msg::Quaternion PicassoEyes::rpyToQuaternion(const double roll, const double pitch, const double yaw) {
+  tf2::Quaternion q;
+  tf2::Matrix3x3 m;
+  m.setRPY(roll, pitch, yaw);
+  q.setRotation(m);
+  geometry_msgs::msg::Quaternion q_msg;
+  tf2::convert(q_msg, q);
+  return q_msg;
 }

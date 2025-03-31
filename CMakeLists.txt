@@ -17,8 +17,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-#find_package(tf2_ros REQUIRED) # not needed yet but will likely be
-#find_package(tf2 REQUIRED)     # not needed yet but will likely be
+find_package(tf2_ros REQUIRED)
+find_package(tf2 REQUIRED)
 
 
 # Eyes
@@ -62,14 +62,14 @@ set(picasso_eyes_dep
   rclcpp
   sensor_msgs
   geometry_msgs
-  vizualization_msgs
+  visualization_msgs
   OpenCV
   cv_bridge
   image_transport
   realsense2
   realsense2_camera_msgs
-  #tf2
-  #tf2_ros
+  tf2
+  tf2_ros
   )
 
 set(picasso_eyes_src
