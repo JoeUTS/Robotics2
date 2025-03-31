@@ -75,43 +75,58 @@ void PicassoEyes::tempFunction(void) {
   // TO DO
   visualization_msgs::msg::MarkerArray markerArrayToolpath;
   unsigned int markerId = 0;
-  for (std::shared_ptr<Contour> contour : toolPaths) {
-    visualization_msgs::msg::Marker markerStart, markerEnd;
-    markerStart.header.frame_id = "camera_link";
-    markerStart.header.stamp = ros::Time::now();
-    markerStart.marker.ns = "toolpath";
-    markerStart.marker.id = markerId++;
-    markerStart.type = visualization_msgs::msg::Marker::ARROW;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.pose = contour->getHead();
+  for (std::shared_ptr<Contour> &contour : toolPaths) {
+    visualization_msgs::msg::Marker tempMarker;
+    tempMarker.header.frame_id = "camera_link";
+    tempMarker.header.stamp = this->get_clock()->now();
+    tempMarker.ns = "toolpath";
+    tempMarker.action = 0;  // add/modify
 
-    // other stuff
-    markerArrayToolpath.markers.push_back(markerStart);
+    // Start marker.
+    tempMarker.id = markerId++;
+    tempMarker.type = 0;  // Arrow
+    tempMarker.pose.position = contour->getHead();
+    tempMarker.pose.orientation = rpyToQuaternion(0, -90, 0);
+    tempMarker.scale.x = 1;
+    tempMarker.scale.y = 1;
+    tempMarker.scale.z = 1;
+    tempMarker.color.r = 0;
+    tempMarker.color.g = 1;
+    tempMarker.color.b = 0;
+    tempMarker.color.a = 1;
+    markerArrayToolpath.markers.push_back(tempMarker);
 
-    markerEnd.type = visualization_msgs::msg::Marker::ARROW;
-    // other stuff
-    markerArrayToolpath.markers.push_back(markerEnd);
+    // End marker.
+    tempMarker.id = markerId++;
+    tempMarker.pose.position = contour->getTail();
+    tempMarker.scale.x = 1;
+    tempMarker.scale.y = 1;
+    tempMarker.scale.z = 1;
+    tempMarker.color.r = 1;
+    tempMarker.color.g = 0;
+    tempMarker.color.b = 0;
+    tempMarker.color.a = 1;
+    markerArrayToolpath.markers.push_back(tempMarker);
 
-    geometry_msgs::msg::PoseArray toolpath = contour->getPath();
-    geometry_msgs::msg::Pose prevPose;
-    for (geometry_msgs::msg::Pose pose : toolpath.poses) {
-      // skip first iteration.
-      if (!prevPose) {
-        prevPose = pose;
-        continue;
-      }
+    // Toolpath.
+    tempMarker.id = markerId++;
+    tempMarker.type = 4; // line strip.
+    tempMarker.pose = geometry_msgs::msg::Pose();
+    tempMarker.color.r = 0;
+    tempMarker.color.g = 0;
+    tempMarker.color.b = 1;
+    tempMarker.color.a = 1;
+    tempMarker.scale.x = 0.1;
+    tempMarker.scale.y = 0.1;
+    tempMarker.scale.z = 0.1;
+    geometry_msgs::msg::PoseArray path = contour->getPath();
 
-      visualization_msgs::msg::Marker markerLine;
-      markerLine.type = visualization_msgs::msg::Marker::LINE_STRIP;
-      // other stuff
-      markerArrayToolpath.markers.push_back(markerLine);
+    for (geometry_msgs::msg::Pose &pose : path.poses) {
+      tempMarker.points.push_back(pose.position);
     }
+    
+    markerArrayToolpath.markers.push_back(tempMarker);
   }
-  
-  // get start and end points from toolpaths
-
-  visualization_msgs::msg::Marker markerToolpath;
-  // get points from toolpaths
 
   // Publish visualization
   // TO DO
@@ -122,9 +137,7 @@ void PicassoEyes::tempFunction(void) {
 
 geometry_msgs::msg::Quaternion PicassoEyes::rpyToQuaternion(const double roll, const double pitch, const double yaw) {
   tf2::Quaternion q;
-  tf2::Matrix3x3 m;
-  m.setRPY(roll, pitch, yaw);
-  q.setRotation(m);
+  q.setRPY(roll, pitch, yaw);
   geometry_msgs::msg::Quaternion q_msg;
   tf2::convert(q_msg, q);
   return q_msg;
