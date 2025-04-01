@@ -1,0 +1,1 @@
+rclcpp;std_msgs;sensor_msgs;geometry_msgs;libopencv-dev;image_transport;cv_bridge;librealsense2;realsense2_camera_msgs;moveit_ros_planning_interface;launch_ros;ament_cmake_ros;ament_lint_auto;ament_lint_common
