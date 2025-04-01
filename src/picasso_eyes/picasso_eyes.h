@@ -3,16 +3,25 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/logger.hpp"
+
 #include "std_msgs/msg/header.hpp"
+
 #include "sensor_msgs/msg/image.hpp"
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/transform.hpp"
-
+#include "visualization_msgs/msg/marker.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
+#include <tf2/LinearMath/Quaternion.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <realsense2_camera_msgs/msg/rgbd.hpp>
+#include <opencv2/opencv.hpp>
 
 #include <string>
+#include <thread>
+#include <map>
 
 #include "image_controller.h"
+#include "Contour.h"
 
 /*
 Camera is realsense D435i
@@ -23,6 +32,10 @@ ros2 launch realsense2_camera rs_launch.py enable_rgbd:=true rgb_camera.color_pr
 // from rosbag
 ros2 launch realsense2_camera rs_launch.py rosbag_filename:="/full/path/to/rosbag/file" align_depth.enable:=true
 
+// arm
+ros2 launch ur_robot_driver ur_control.launch.py ur_type:=ur3e robot_ip:=192.168.1.102 launch_rviz:=false initial_joint_controller:=joint_trajectory_controller use_fake_hardware:=true
+
+ros2 launch ur_moveit_config ur_moveit.launch.py ur_type:=ur3e launch_rviz:=true use_fake_hardware:=true
 
 // Default topic list:
 https://dev.intelrealsense.com/docs/ros2-wrapper
@@ -52,6 +65,9 @@ public:
   PicassoEyes(void);
 
 private:
+  bool generationRunning_ = false;
+  std::thread imageProcessThread_;
+
   rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr subCameraMsg_; // Camera RGB image subscriber
 
   std::shared_ptr<imageController> imageController_ = NULL;
@@ -60,7 +76,20 @@ private:
 
   void cameraReceiveCallback(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg);
 
-  
+  /// @brief Generate toolpath from provided image.
+  /// @param image image to generate toolpath from.
+  /// @param blurPasses Number of blur passes to apply. \n
+  ///                   Note: This is applied prior to colour quantisation. \n
+  ///                   Note: Applies both a gaussian and median blur per pass.
+  /// @param blurKernalSize size of blur kernal.
+  /// @param colourSteps Number of colours to reduce to.
+  /// @return Vector of contours.
+  std::map<int, std::shared_ptr<Contour>> generateToolpath(cv::Mat &image, const int blurPasses, const int blurKernalSize, const int colourSteps);
+
+  /// @brief Temporary function for testing.
+  void tempFunction(void);
+
+  geometry_msgs::msg::Quaternion rpyToQuaternion(const double roll, const double pitch, const double yaw);
 };
 
 #endif // PICASSOEYES_H

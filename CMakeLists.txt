@@ -16,16 +16,19 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
-#find_package(tf2_ros REQUIRED) # not needed yet but will likely be
-#find_package(tf2 REQUIRED)     # not needed yet but will likely be
+find_package(geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 
 # Eyes
+find_package(ament_index_cpp)
 find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package(realsense2_camera_msgs REQUIRED)
 
@@ -60,13 +63,15 @@ set(picasso_eyes_dep
   rclcpp
   sensor_msgs
   geometry_msgs
+  visualization_msgs
   OpenCV
   cv_bridge
   image_transport
   realsense2
   realsense2_camera_msgs
-  #tf2
-  #tf2_ros
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
   )
 
 set(picasso_eyes_src
@@ -105,6 +110,7 @@ install(
   config
   launch
   rviz
+  worlds
   DESTINATION share/${PROJECT_NAME}
 )
 
