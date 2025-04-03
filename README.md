@@ -30,7 +30,6 @@ https://gazebosim.org/docs/fortress/install_ubuntu/
 
 ROS2 GZ control
 https://github.com/ros-controls/gz_ros2_control
-!! Use sudo apt install ros-humble-gazebo-ros2-control
 
 ur_simulation_gz
 https://docs.universal-robots.com/Universal_Robots_ROS2_Documentation/doc/ur_simulation_gz/ur_simulation_gz/doc/installation.html
