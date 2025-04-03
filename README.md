@@ -25,3 +25,5 @@ https://www.universal-robots.com/developer/communication-protocol/ros-and-ros2-d
 QT (Version?)
 https://www.qt.io/product/development-tools
 
+Gazebo Simulator(UR Simulation Compatible).
+https://github.com/UniversalRobots/Universal_Robots_ROS2_Gazebo_Simulation/tree/humble
