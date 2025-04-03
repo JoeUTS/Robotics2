@@ -41,6 +41,8 @@ If you get errors while launching, try updating the ur_sim_control.launch.py sec
   }.items(),
 )"
 
+You may also need to replace "force_abs_paths="true"" with "sim_gazebo="true"" in ur_simulation_gz/urdf/ur_gz.urdf.xacro
+
 ur_simulation_gz
 https://docs.universal-robots.com/Universal_Robots_ROS2_Documentation/doc/ur_simulation_gz/ur_simulation_gz/doc/installation.html
 
