@@ -13,11 +13,11 @@ def generate_launch_description():
 
   # settings
   urType = 'ur3e'
-  urIP = '111.111.111.111'
-  urController = 'scaled_joint_trajectory_controller'
+  urIP = '192.168.56.101:6080'
+  urController = 'joint_trajectory_controller'
   urMockHardware = 'true'
-  urStartDelay = 3.0  # [sec].
-  moveItStartDelay = 3.0  # [sec].
+  urStartDelay = 1.5  # [sec].
+  moveItStartDelay = 1.5  # [sec].
   launchRVIZ = 'true'
 
   # nodes

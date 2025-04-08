@@ -1,2 +1,1 @@
-source;share/picasso_bot/environment/ament_prefix_path.sh
-source;share/picasso_bot/environment/path.sh
+/home/joji/git/Robotics2/build/picasso_bot/ament_cmake_environment_hooks/local_setup.dsv

@@ -1,1 +1,1 @@
-This is where we will palce any config files
+/home/joji/git/Robotics2/config/placeholder.txt
