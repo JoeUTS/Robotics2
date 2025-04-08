@@ -20,7 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
         "/processed_camera_image", 10,
         std::bind(&MainWindow::imageCallback, this, std::placeholders::_1));
 
-    // Generate a blue image and start publishing it
+    // Generate a blue image and start publishing it (Placeholder code for camera)
     cv::Mat image(480, 640, CV_8UC3, cv::Scalar(255, 0, 0)); // Blue image
     auto image_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", image).toImageMsg();
     auto loop_rate = std::make_shared<rclcpp::Rate>(5); // 5 Hz
@@ -42,13 +42,32 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow() {
     rclcpp::shutdown();
     delete ui;
-    // delete camera;
-    // delete viewfinder;
 }
 
 void MainWindow::startCamera() {
- //   camera->start();
-    viewfinder->show();
+    // Ensure the ROS 2 subscription is active
+    RCLCPP_INFO(node->get_logger(), "Starting camera and initializing ROS image view...");
+
+    // Find or create the QLabel in the existing layout
+    QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
+
+    if (!imageLabel) {
+        // If QLabel doesn't exist, create it and add it to the layout
+        imageLabel = new QLabel(ui->viewfinderPlaceholder);
+        imageLabel->setObjectName("imageLabel");
+        imageLabel->setScaledContents(true); // Scale the image to fit the label
+
+        // Add QLabel to the existing layout
+        QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(ui->viewfinderPlaceholder->layout());
+        if (!layout) {
+            layout = new QVBoxLayout(ui->viewfinderPlaceholder);
+            ui->viewfinderPlaceholder->setLayout(layout);
+        }
+        layout->addWidget(imageLabel);
+    }
+
+    // Display a message indicating the camera has started
+    RCLCPP_INFO(node->get_logger(), "Camera started. Waiting for images...");
 }
 
 void MainWindow::captureImage() {
