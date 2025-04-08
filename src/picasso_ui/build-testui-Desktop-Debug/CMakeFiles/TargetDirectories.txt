@@ -1,0 +1,8 @@
+/home/daniel/git/Robotics2/src/picasso_ui/build-testui-Desktop-Debug/CMakeFiles/testui.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build-testui-Desktop-Debug/CMakeFiles/edit_cache.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build-testui-Desktop-Debug/CMakeFiles/rebuild_cache.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build-testui-Desktop-Debug/CMakeFiles/list_install_components.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build-testui-Desktop-Debug/CMakeFiles/install.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build-testui-Desktop-Debug/CMakeFiles/install/local.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build-testui-Desktop-Debug/CMakeFiles/install/strip.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build-testui-Desktop-Debug/CMakeFiles/testui_autogen.dir

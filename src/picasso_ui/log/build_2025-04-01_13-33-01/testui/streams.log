@@ -1,0 +1,27 @@
+[0.010s] Invoking command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui': /usr/bin/cmake /home/daniel/git/Robotics2/src/picasso_ui/testui -DCMAKE_INSTALL_PREFIX=/home/daniel/git/Robotics2/src/picasso_ui/install/testui
+[0.021s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.153s] -- Found rclcpp: 16.0.12 (/opt/ros/humble/share/rclcpp/cmake)
+[0.182s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.184s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.190s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.199s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.212s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.243s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.245s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[0.346s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.405s] [31mCMake Error at /opt/ros/humble/share/ament_cmake_target_dependencies/cmake/ament_target_dependencies.cmake:145 (target_link_libraries):
+[0.406s]   The keyword signature for target_link_libraries has already been used with
+[0.406s]   the target "testui".  All uses of target_link_libraries with a target must
+[0.406s]   be either all-keyword or all-plain.
+[0.406s] 
+[0.406s]   The uses of the keyword signature are here:
+[0.406s] 
+[0.406s]    * CMakeLists.txt:82 (target_link_libraries)
+[0.406s] 
+[0.406s] Call Stack (most recent call first):
+[0.406s]   CMakeLists.txt:95 (ament_target_dependencies)
+[0.406s] 
+[0.406s] [0m
+[0.406s] -- Configuring incomplete, errors occurred!
+[0.406s] See also "/home/daniel/git/Robotics2/src/picasso_ui/build/testui/CMakeFiles/CMakeOutput.log".
+[0.413s] Invoked command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui' returned '1': /usr/bin/cmake /home/daniel/git/Robotics2/src/picasso_ui/testui -DCMAKE_INSTALL_PREFIX=/home/daniel/git/Robotics2/src/picasso_ui/install/testui

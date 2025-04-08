@@ -1,0 +1,4 @@
+Invoking command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui': /usr/bin/cmake /home/daniel/git/Robotics2/src/picasso_ui/testui -DCMAKE_INSTALL_PREFIX=/home/daniel/git/Robotics2/src/picasso_ui/install/testui
+Invoked command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui' returned '0': /usr/bin/cmake /home/daniel/git/Robotics2/src/picasso_ui/testui -DCMAKE_INSTALL_PREFIX=/home/daniel/git/Robotics2/src/picasso_ui/install/testui
+Invoking command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui': /usr/bin/cmake --build /home/daniel/git/Robotics2/src/picasso_ui/build/testui -- -j16 -l16
+Invoked command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui' returned '2': /usr/bin/cmake --build /home/daniel/git/Robotics2/src/picasso_ui/build/testui -- -j16 -l16

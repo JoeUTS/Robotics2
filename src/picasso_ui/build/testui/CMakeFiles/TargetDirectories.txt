@@ -1,0 +1,7 @@
+/home/daniel/git/Robotics2/src/picasso_ui/build/testui/CMakeFiles/uninstall.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build/testui/CMakeFiles/testui_uninstall.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build/testui/CMakeFiles/testui.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build/testui/CMakeFiles/test.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build/testui/CMakeFiles/edit_cache.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build/testui/CMakeFiles/rebuild_cache.dir
+/home/daniel/git/Robotics2/src/picasso_ui/build/testui/CMakeFiles/testui_autogen.dir
