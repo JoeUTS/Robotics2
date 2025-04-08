@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->startCamera, &QPushButton::clicked, this, &MainWindow::startCamera);
     connect(ui->captureImage, &QPushButton::clicked, this, &MainWindow::captureImage);
   //  connect(ui->eStopButton, &QPushButton::clicked, this, &MainWindow::sendEmergencyStop);
-
+    
 }
 
 MainWindow::~MainWindow() {
@@ -52,11 +52,17 @@ void MainWindow::startCamera() {
 }
 
 void MainWindow::captureImage() {
-    // Choose a file path for saving the image
-    QString filePath = QFileDialog::getSaveFileName(this, "Save Image", QDir::homePath(), "Images (*.jpg *.png *.bmp)");
-
-    if (!filePath.isEmpty()) {
-        imageCapture->capture(filePath);
+    // Get the current image from the QLabel
+    QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
+    if (imageLabel) {
+        QPixmap pixmap = *(imageLabel->pixmap());
+        if (!pixmap.isNull()) {
+            // Save the image to a file
+            QString filePath = QFileDialog::getSaveFileName(this, "Save Image", QDir::homePath(), "Images (*.jpg *.png *.bmp)");
+            if (!filePath.isEmpty()) {
+                pixmap.toImage().save(filePath);
+            }
+        }
     }
 }
 
