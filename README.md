@@ -46,6 +46,7 @@ Ubuntu 22.04 LTS
 
 ### QT
 > sudo apt-get install build-essential libgl1-mesa-dev <br/>
+> sudo apt install qt5-default <br/>
 > sudo apt-get install qtmultimedia5-dev <br/>
 
 ### ros_image_to_qimage
