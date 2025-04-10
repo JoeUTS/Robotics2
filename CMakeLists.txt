@@ -25,7 +25,6 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
-
 # Eyes
 find_package(ament_index_cpp)
 find_package(OpenCV REQUIRED)
@@ -38,6 +37,7 @@ find_package(realsense2_camera_msgs REQUIRED)
 
 # Arm
 find_package(moveit_ros_planning_interface REQUIRED)
+
 # UI
 find_package(Qt5 REQUIRED COMPONENTS Widgets Core Gui)
 
@@ -70,7 +70,6 @@ set(picasso_arm_src
 add_executable(picasso_arm ${picasso_arm_src})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
 
-
 # Eyes
 set(picasso_eyes_dep 
   ament_index_cpp
@@ -92,6 +91,7 @@ set(picasso_eyes_src
   src/picasso_eyes/eyes_main.cpp
   src/picasso_eyes/picasso_eyes.cpp
   src/picasso_eyes/image_controller.cpp
+  src/picasso_eyes/salesman_solver.cpp
 )
 
 add_executable(picasso_eyes ${picasso_eyes_src})
