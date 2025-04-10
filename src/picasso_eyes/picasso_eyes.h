@@ -19,6 +19,7 @@
 #include <string>
 #include <thread>
 #include <map>
+#include <chrono>
 
 #include "image_controller.h"
 #include "Contour.h"
@@ -68,8 +69,12 @@ private:
   bool generationRunning_ = false;
   std::thread imageProcessThread_;
 
-  rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr subCameraMsg_; // Camera RGB image subscriber
-
+  rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr subCamera_;  // Camera RGB image subscriber.
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubVis_;     // Visualization markers publisher.
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pubCameraImage_;          // Camera image publisher.
+  rclcpp::TimerBase::SharedPtr timer_;
+  std::chrono::milliseconds timer_duration_{1000};
+  
   std::shared_ptr<imageController> imageController_ = NULL;
 
   geometry_msgs::msg::PoseArray outputPoseArray_; // Holds copy of last generated pose array msg.
@@ -84,12 +89,16 @@ private:
   /// @param blurKernalSize size of blur kernal.
   /// @param colourSteps Number of colours to reduce to.
   /// @return Vector of contours.
-  std::map<int, std::shared_ptr<Contour>> generateToolpath(cv::Mat &image, const int blurPasses, const int blurKernalSize, const int colourSteps);
+  std::map<int, std::shared_ptr<Contour>> generateToolpath(cv::Mat &image, const float scale, const int blurPasses, const int blurKernalSize, const int colourSteps);
 
   /// @brief Temporary function for testing.
   void tempFunction(void);
 
   geometry_msgs::msg::Quaternion rpyToQuaternion(const double roll, const double pitch, const double yaw);
+
+  void addMarkerPoint(visualization_msgs::msg::MarkerArray &markerArray, const unsigned int id, const geometry_msgs::msg::Pose &pose, const geometry_msgs::msg::Vector3 &scale, const std_msgs::msg::ColorRGBA &colour);
+
+  void addMarkerPath(visualization_msgs::msg::MarkerArray &markerArray, const unsigned int id, const std::vector<geometry_msgs::msg::Point> &points, const geometry_msgs::msg::Vector3 &scale, const std_msgs::msg::ColorRGBA &colour);
 };
 
 #endif // PICASSOEYES_H

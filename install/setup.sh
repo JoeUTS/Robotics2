@@ -35,11 +35,15 @@ COLCON_CURRENT_PREFIX="/opt/ros/humble"
 _colcon_prefix_chain_sh_source_script "$COLCON_CURRENT_PREFIX/local_setup.sh"
 
 # setting COLCON_CURRENT_PREFIX avoids relying on the build time prefix of the sourced script
+<<<<<<< HEAD
 COLCON_CURRENT_PREFIX="/home/joji/ros2_ws/src/install"
 _colcon_prefix_chain_sh_source_script "$COLCON_CURRENT_PREFIX/local_setup.sh"
 
 # setting COLCON_CURRENT_PREFIX avoids relying on the build time prefix of the sourced script
 COLCON_CURRENT_PREFIX="/home/joji/workspaces/ur_gz/install"
+=======
+COLCON_CURRENT_PREFIX="/home/daniel/ros2_ws/install"
+>>>>>>> 5dc2a702bb3e9da8e0f5724912d52a68c21edf38
 _colcon_prefix_chain_sh_source_script "$COLCON_CURRENT_PREFIX/local_setup.sh"
 
 

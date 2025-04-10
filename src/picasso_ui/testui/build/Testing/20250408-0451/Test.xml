@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20250408-0451-Experimental"
+	Name="daniel-IdeaPad-Slim-3-14IRH8"
+	Generator="ctest-3.22.1"
+	CompilerName="/usr/bin/c++"
+	CompilerVersion="11.4.0"
+	OSName="Linux"
+	Hostname="daniel-IdeaPad-Slim-3-14IRH8"
+	OSRelease="6.8.0-57-generic"
+	OSVersion="#59~22.04.1-Ubuntu SMP PREEMPT_DYNAMIC Wed Mar 19 17:07:41 UTC 2"
+	OSPlatform="x86_64"
+	Is64Bits="1"
+	VendorString="GenuineIntel"
+	VendorID="Intel Corporation"
+	FamilyID="6"
+	ModelID="186"
+	ProcessorCacheSize="24576"
+	NumberOfLogicalCPU="16"
+	NumberOfPhysicalCPU="10"
+	TotalVirtualMemory="1407"
+	TotalPhysicalMemory="15684"
+	LogicalProcessorsPerPhysical="1"
+	ProcessorClockFrequency="399.769"
+	>
+	<Testing>
+		<StartDateTime>Apr 08 16:20 AEST</StartDateTime>
+		<StartTestTime>1744093211</StartTestTime>
+		<TestList/>
+		<EndDateTime>Apr 08 16:20 AEST</EndDateTime>
+		<EndTestTime>1744093211</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>

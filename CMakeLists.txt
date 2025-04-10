@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 project(picasso_bot)
 
+
+set(CMAKE_PREFIX_PATH /usr/lib/x86_64-linux-gnu/cmake/Qt5)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -35,12 +38,20 @@ find_package(realsense2_camera_msgs REQUIRED)
 # Arm
 find_package(moveit_ros_planning_interface REQUIRED)
 # UI
+find_package(Qt5 REQUIRED COMPONENTS Widgets Core Gui)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+ament_target_dependencies(picasso_ui
+  rclcpp
+  std_msgs
+)
 
 # Add include directories
 include_directories(
   src/picasso_arm
   src/picasso_eyes
   src/picasso_ui
+  
 )
 
 # Arm
@@ -89,8 +100,8 @@ set(picasso_eyes_src
   src/picasso_eyes/image_controller.cpp
 )
 
-add_executable(picasso_eyes ${picasso_eyes_src})
-ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
+# add_executable(picasso_eyes ${picasso_eyes_src})
+#ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
 #target_link_libraries(picasso_eyes ) # probably not needed. Holding onto incase needing to make imageControler a static library.
 
 # UI
@@ -104,13 +115,19 @@ set (picasso_ui_src
   src/picasso_ui/picasso_ui.cpp
 )
 
+# target_link_libraries(picasso_ui.h Qt5::Widgets)
+ include_directories(${Qt5Widgets_INCLUDE_DIRS})
+ include_directories(${rclcpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
 add_executable(picasso_ui ${picasso_ui_src})
 ament_target_dependencies(picasso_ui ${picasso_ui_dep})
+set(CMAKE_AUTOUIC ON) 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 
 install(TARGETS
   picasso_arm
-  picasso_eyes
+ # picasso_eyes
   picasso_ui
   DESTINATION lib/${PROJECT_NAME})
 

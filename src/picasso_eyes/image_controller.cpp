@@ -5,12 +5,18 @@ imageController::imageController(const realsense2_camera_msgs::msg::RGBD::Shared
   std::string packageShareDir = ament_index_cpp::get_package_share_directory("picasso_bot");
   std::string pathImageClasses = packageShareDir + "/config/coco-classes.txt";
   std::string pathYOLO = packageShareDir + "/config/yolov8m-seg.onnx";
+
+  
+
 }
 
-void imageController::updateCameraImage(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
+sensor_msgs::msg::Image imageController::updateCameraImage(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
   std::unique_lock<std::mutex> lck(mutex_);
   lastCameraMsg_ = *incomingMsg;
+  sensor_msgs::msg::Image cameraImage = lastCameraMsg_.rgb;
   lck.unlock();
+
+  return cameraImage;
 }
 
 realsense2_camera_msgs::msg::RGBD imageController::getStoredImage(void) {
@@ -19,46 +25,6 @@ realsense2_camera_msgs::msg::RGBD imageController::getStoredImage(void) {
   lck.unlock();
 
   return msg;
-}
-
-cv::Mat imageController::getDepthImage(void) {
-  std::unique_lock<std::mutex> lck(mutex_);
-  cv::Mat image = msg2Mat(lastCameraMsg_.depth);
-  lck.unlock();
-
-  return image;
-}
-
-cv::Mat imageController::getRGBImage(void) {
-  std::unique_lock<std::mutex> lck(mutex_);
-  cv::Mat image = msg2Mat(lastCameraMsg_.rgb);
-  lck.unlock();
-
-  return image;
-}
-
-sensor_msgs::msg::CameraInfo imageController::getRGBInfo(void) {
-  std::unique_lock<std::mutex> lck(mutex_);
-  sensor_msgs::msg::CameraInfo info = lastCameraMsg_.rgb_camera_info;
-  lck.unlock();
-
-  return info;
-}
-
-sensor_msgs::msg::CameraInfo imageController::getDepthInfo(void) {
-  std::unique_lock<std::mutex> lck(mutex_);
-  sensor_msgs::msg::CameraInfo info = lastCameraMsg_.depth_camera_info;
-  lck.unlock();
-
-  return info;
-}
-
-std_msgs::msg::Header imageController::getHeader(void) {
-  std::unique_lock<std::mutex> lck(mutex_);
-  std_msgs::msg::Header header = lastCameraMsg_.header;
-  lck.unlock();
-
-  return header;
 }
 
 void imageController::editImageQuantize(cv::Mat &image, const int colourSteps) {
@@ -100,15 +66,7 @@ cv::Scalar imageController::getNextColour(void) {
   return colour;
 }
 
-std::array<cv::Mat, 3> imageController::splitImage(cv::Mat &image) {
-  cv::Mat imageChannels[3];
-  cv::split(image, imageChannels);
-  std::array<cv::Mat, 3> result = {imageChannels[2], imageChannels[1], imageChannels[0]};
-
-  return result;
-}
-
-cv::Mat imageController::msg2Mat(sensor_msgs::msg::Image &imageMsg) {
+cv::Mat imageController::msg2Mat(const sensor_msgs::msg::Image &imageMsg) {
   cv_bridge::CvImagePtr cvPtr;
   cv::Mat image;
 
@@ -131,9 +89,6 @@ cv::Mat imageController::msg2Mat(sensor_msgs::msg::Image &imageMsg) {
     cvPtr = cv_bridge::toCvCopy(imageMsg, "bgr8");
     image = cvPtr->image;
   }
-
-  cv_bridge::CvImagePtr cvPtr;
-  cv::Mat image;
 
   if (imageMsg.encoding == "16UC1" || imageMsg.encoding == "32FC1") {
     // Depth image.
@@ -159,13 +114,6 @@ cv::Mat imageController::msg2Mat(sensor_msgs::msg::Image &imageMsg) {
 }
 
 void imageController::detectEdges(cv::Mat &image, float thresh) {
-  // If image is multichannel, assuming has not been processed.
-  if (image.channels() > 1) {
-    greyscaleImage(image);
-    medianBlurImage(image, 9);
-    gaussianBlurImage(image, 3);
-  }
-
   int ave = calculateAverageIntensity(image);
 
   // Get canny values.
@@ -176,15 +124,8 @@ void imageController::detectEdges(cv::Mat &image, float thresh) {
   cv::Canny(image, image, lower, upper);
 }
 
-std::map<int, std::shared_ptr<Contour>> imageController::getContours(cv::Mat &image) {
+std::map<int, std::shared_ptr<Contour>> imageController::getContours(const cv::Mat &image, const float scale) {
   std::map<int, std::shared_ptr<Contour>> contoursList;
-
-  // If image is multichannel, assuming has not been processed.
-  if (image.channels() > 1) {
-    greyscaleImage(image);
-    gaussianBlurImage(image, 3);
-    thresholdImage(image, calculateAverageIntensity(image));
-  }
 
   // Find contours.
   std::vector<std::vector<cv::Point>> contours;
@@ -193,19 +134,13 @@ std::map<int, std::shared_ptr<Contour>> imageController::getContours(cv::Mat &im
 
   // Generate contour list.
   for (int i = 0; i < contours.size(); i++) {
-    contoursList.emplace(i, Contour::create(i, contours[i]));
+    contoursList.emplace(i, Contour::create(i, image, scale, contours[i]));
   }
 
   return contoursList;
 }
 
 int imageController::calculateAverageIntensity(cv::Mat &image) {
-  // If image is multichannel, assuming has not been processed.
-  if (image.channels() > 1) {
-    cv::cvtColor(image, image, cv::COLOR_RGB2GRAY);
-    cv::GaussianBlur(image, image, cv::Size(3, 3), 0);
-  }
-
   cv::Scalar mean = cv::mean(image);
   return round(mean[0]);
 }
@@ -226,14 +161,14 @@ void imageController::generateArt(void) {
   }
   
   for (int i = 0; i < blurPasses; i++) {
-    medianBlurImage(imageRGB, kernalSize);
-    gaussianBlurImage(imageRGB, kernalSize);
+    editImageBlurMedian(imageRGB, kernalSize);
+    editImageBlurGaussian(imageRGB, kernalSize);
   }
   
   editImageQuantize(imageRGB, colourSteps);
 
   cv::Mat edges = imageRGB.clone();
-  greyscaleImage(edges);
+  editImageGreyscale(edges);
   detectEdges(edges, 0.1);
 
   std::vector<std::vector<cv::Point>> contours;
@@ -246,7 +181,7 @@ void imageController::generateArt(void) {
   toolPaths.reserve(contours.size());
 
   for (std::vector<cv::Point> &contour : contours) {
-    std::shared_ptr<Contour> contourPtr = Contour::create(toolPaths.size(), contour);
+    std::shared_ptr<Contour> contourPtr = Contour::create(toolPaths.size(), imageRGB, 1.0, contour);
     toolPaths.push_back(contourPtr);
   }
 

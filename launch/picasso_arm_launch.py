@@ -5,20 +5,35 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.actions import IncludeLaunchDescription, TimerAction, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
 
 def generate_launch_description():
   ld = LaunchDescription()
 
-  # settings
+  # Launch arguments
+  declare_ur_mock_hardware = DeclareLaunchArgument(
+    'ur_mock_hardware',
+    default_value='true',
+    description='Whether to use mock hardware'
+  )
+
+  declare_launchRVIZ = DeclareLaunchArgument(
+    'launch_rviz',
+    default_value='true',
+    description='Whether launch RVIz'
+  )
+  
+  # Launch configurations
   urType = 'ur3e'
-  urIP = '192.168.56.101:6080'
+  urIP = '111.111.111.111'
   urController = 'joint_trajectory_controller'
-  urMockHardware = 'true'
-  urStartDelay = 1.5  # [sec].
-  moveItStartDelay = 1.5  # [sec].
-  launchRVIZ = 'true'
+  urMockHardware = LaunchConfiguration('ur_mock_hardware')
+  urStartDelay = 3.0  # [sec].
+  moveItStartDelay = 3.0  # [sec].
+  launchRVIZ = LaunchConfiguration('launch_rviz')
 
   # nodes
   picasso_arm = Node(
@@ -26,6 +41,19 @@ def generate_launch_description():
     executable="picasso_arm",
     name="picasso_arm",
     output="screen"
+  )
+
+  ur_sim_gz = IncludeLaunchDescription(
+    PythonLaunchDescriptionSource([
+      os.path.join(get_package_share_directory('ur_simulation_gz'), 'launch'),
+      '/ur_sim_control.launch.py'
+    ]),
+    launch_arguments={
+      'ur_type': urType,
+      "launch_rviz": "false",
+      "initial_joint_controller": urController
+    }.items(),
+    condition=IfCondition(urMockHardware)
   )
 
   ur_driver = IncludeLaunchDescription(
@@ -65,6 +93,12 @@ def generate_launch_description():
     actions=[picasso_arm]
   )
 
+  # Add the declare argument action
+  ld.add_action(declare_ur_mock_hardware)
+  ld.add_action(declare_launchRVIZ)
+  
+  # Run remaining nodes.
+  ld.add_action(ur_sim_gz)
   ld.add_action(ur_driver)
   ld.add_action(delayed_start_move_it)
   ld.add_action(delayed_start_picasso_arm)

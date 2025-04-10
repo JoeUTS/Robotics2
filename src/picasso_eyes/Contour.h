@@ -12,88 +12,106 @@
 
 class Contour : public std::enable_shared_from_this<Contour> {
 public:
-  static std::shared_ptr<Contour> create(const int contourID, std::vector<cv::Point> &contours) {
+  static std::shared_ptr<Contour> create(const int contourID, const cv::Mat &image, const float scale, std::vector<cv::Point> &contours) {
     std::shared_ptr<Contour> instance = std::make_shared<Contour>(contourID);
-    instance->initialize(contours);
+    instance->initialize(image, scale, contours);
     return instance;
   }
 
-  // Constructs contour object from a vector of cv::Points
+  /// @brief Constructor, sets ID. Not to be called directly, use Contour::create().
+  /// @param contourID ID of contour.
   Contour(const int contourID) : contourID_(contourID) {};
 
-  // Gets contour's ID
+  /// @brief ID getter.
+  /// @return int. contourID_.
   int getID(void) {return contourID_;};
 
-  // Gets drawn status.
+  /// @brief self pointer getter.
+  /// @return std::shared_ptr<Contour>. selfPtr_.
+  std::shared_ptr<Contour> getContourPtr(void) {return selfPtr_;};
+
+  /// @brief is drawn getter.
+  /// @return bool. isDrawn_.
   bool getDrawn(void) {return isDrawn_;};
 
-  // Sets drawn status.
+  /// @brief Drawn status setter true.
   void setDrawn(void) {isDrawn_ = true;};
 
-  // Gets contour head point.
-  geometry_msgs::msg::Point getHead(void) {return *head_;};
+  /// @brief first point getter.
+  /// @return std::shared_ptr<geometry_msgs::msg::Point>. points_.front().
+  std::shared_ptr<geometry_msgs::msg::Point> getHead(void) {return points_.front();};
 
-  // Gets contour tail point.
-  geometry_msgs::msg::Point getTail(void) {return *tail_;};
+  /// @brief last point getter.
+  /// @return std::shared_ptr<geometry_msgs::msg::Point>. points_.back().
+  std::shared_ptr<geometry_msgs::msg::Point> getTail(void) {return points_.back();};
 
-  // Gets forward contour path.
+  /// @brief Gets points list from start to end as a PoseArray.
+  /// @return geometry_msgs::msg::PoseArray. points_.
   geometry_msgs::msg::PoseArray getPath(void) {
     geometry_msgs::msg::PoseArray poseArray;
     poseArray.poses.reserve(points_.size());
-    std::for_each(points_.begin(), points_.end(), [this, &poseArray](geometry_msgs::msg::Point &point) {
+
+    for (auto it = points_.begin(); it != points_.end(); ++it) {
       geometry_msgs::msg::Pose pose;
-      pose.position = point;
+      pose.position = **it;
       poseArray.poses.push_back(pose);
-    });
+    }
 
     return poseArray;
   };
 
-  // Gets reverse contour path.
+  /// @brief Gets points list from end to start as a PoseArray.
+  /// @return geometry_msgs::msg::PoseArray. points_.
   geometry_msgs::msg::PoseArray getPathBackwards(void) {
     geometry_msgs::msg::PoseArray poseArray;
     poseArray.poses.reserve(points_.size());
-    std::for_each(points_.end(), points_.begin(), [this, &poseArray](geometry_msgs::msg::Point &point) {
+
+    for (auto it = points_.rbegin(); it != points_.rend(); ++it) {
       geometry_msgs::msg::Pose pose;
-      pose.position = point;
+      pose.position = **it;
       poseArray.poses.push_back(pose);
-    });
+    }
 
     return poseArray;
+  };
+
+  /// @brief Get list of points as a vector of points.
+  /// @return std::vector<geometry_msgs::msg::Point>. points_.
+  std::vector<geometry_msgs::msg::Point> getPoints(void) {
+    std::vector<geometry_msgs::msg::Point> points;
+
+    for (auto it = points_.begin(); it != points_.end(); ++it) {
+      points.push_back(**it);
+    }
+
+    return points;
   };
 
 private:
   const int contourID_;                             // Contour ID.
   bool isDrawn_ = false;                            // True if contour is complete.
-  std::list<geometry_msgs::msg::Point> points_;     // Contour points.
-  
   std::shared_ptr<Contour> selfPtr_;                // Pointer to self.
-  std::unique_ptr<geometry_msgs::msg::Point> head_; // Pointer to start point.
-  std::unique_ptr<geometry_msgs::msg::Point> tail_; // Pointer to end point.
+  std::list<std::shared_ptr<geometry_msgs::msg::Point>> points_;     // Contour points.
 
   // Initializes contour object via converting path.
-  void initialize(std::vector<cv::Point> &contours) {
+  void initialize(const cv::Mat &image, const float scale, std::vector<cv::Point> &contours) {
     // Convert points.
-    std::for_each(contours.begin(), contours.end(), [this](cv::Point &point) {
-      points_.emplace_back(cv2rosPoint(point));
-    });
+    for (unsigned int i = 0; i < contours.size(); i++) {
+      std::shared_ptr<geometry_msgs::msg::Point> pointMsg = std::make_shared<geometry_msgs::msg::Point>();
+      
+      // Center image.
+      pointMsg->x -= image.cols / 2;
+      pointMsg->y -= image.rows / 2;
 
-    // set pointers.
-    head_ = std::make_unique<geometry_msgs::msg::Point>(points_.front());
-    tail_ = std::make_unique<geometry_msgs::msg::Point>(points_.back());
+      // Scale image.
+      pointMsg->x *= scale;
+      pointMsg->y *= scale;
+      
+      points_.push_back(pointMsg);
+    }
+
     selfPtr_ = shared_from_this();
   }
-  
-  // Converts an openCV point to a ros one.
-  geometry_msgs::msg::Point cv2rosPoint(cv::Point &cvPoint) {
-    geometry_msgs::msg::Point point;
-    point.x = static_cast<double>(cvPoint.x);
-    point.y = static_cast<double>(cvPoint.y);
-    point.z = 0.0;
-
-    return point;
-  }
-
 };
 
 #endif // CONTOUR_H

@@ -1,0 +1,203 @@
+[0.092s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build', '--symlink-install']
+[0.092s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=True, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=16, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x75f0e5e5e7a0>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x75f0e5e5e110>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x75f0e5e5e110>>, mixin_verb=('build',))
+[0.141s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.141s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.141s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.141s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.141s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.141s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.141s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/daniel/git/Robotics2/src/picasso_ui'
+[0.141s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.141s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.142s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.142s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.142s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.142s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.142s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.142s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.142s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extensions ['ignore', 'ignore_ament_install']
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extension 'ignore'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extension 'ignore_ament_install'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extensions ['colcon_pkg']
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extension 'colcon_pkg'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extensions ['colcon_meta']
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extension 'colcon_meta'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extensions ['ros']
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extension 'ros'
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extensions ['cmake', 'python']
+[0.145s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extension 'cmake'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extension 'python'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extensions ['python_setup_py']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug) by extension 'python_setup_py'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extensions ['ignore', 'ignore_ament_install']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extension 'ignore'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extension 'ignore_ament_install'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extensions ['colcon_pkg']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extension 'colcon_pkg'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extensions ['colcon_meta']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extension 'colcon_meta'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extensions ['ros']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extension 'ros'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extensions ['cmake', 'python']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extension 'cmake'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extension 'python'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extensions ['python_setup_py']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles) by extension 'python_setup_py'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extensions ['ignore', 'ignore_ament_install']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extension 'ignore'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extension 'ignore_ament_install'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extensions ['colcon_pkg']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extension 'colcon_pkg'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extensions ['colcon_meta']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extension 'colcon_meta'
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extensions ['ros']
+[0.146s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extension 'ros'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extensions ['cmake', 'python']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extension 'cmake'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extension 'python'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extensions ['python_setup_py']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1) by extension 'python_setup_py'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extensions ['ignore', 'ignore_ament_install']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extension 'ignore'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extension 'ignore_ament_install'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extensions ['colcon_pkg']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extension 'colcon_pkg'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extensions ['colcon_meta']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extension 'colcon_meta'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extensions ['ros']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extension 'ros'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extensions ['cmake', 'python']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extension 'cmake'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extension 'python'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extensions ['python_setup_py']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX) by extension 'python_setup_py'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extensions ['ignore', 'ignore_ament_install']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extension 'ignore'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extension 'ignore_ament_install'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extensions ['colcon_pkg']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extension 'colcon_pkg'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extensions ['colcon_meta']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extension 'colcon_meta'
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extensions ['ros']
+[0.147s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extension 'ros'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extensions ['cmake', 'python']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extension 'cmake'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extension 'python'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extensions ['python_setup_py']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/3.22.1/CompilerIdCXX/tmp) by extension 'python_setup_py'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extensions ['ignore', 'ignore_ament_install']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extension 'ignore'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extension 'ignore_ament_install'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extensions ['colcon_pkg']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extension 'colcon_pkg'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extensions ['colcon_meta']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extension 'colcon_meta'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extensions ['ros']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extension 'ros'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extensions ['cmake', 'python']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extension 'cmake'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extension 'python'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extensions ['python_setup_py']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/CMakeFiles/CMakeTmp) by extension 'python_setup_py'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extensions ['ignore', 'ignore_ament_install']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extension 'ignore'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extension 'ignore_ament_install'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extensions ['colcon_pkg']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extension 'colcon_pkg'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extensions ['colcon_meta']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extension 'colcon_meta'
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extensions ['ros']
+[0.148s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extension 'ros'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extensions ['cmake', 'python']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extension 'cmake'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extension 'python'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extensions ['python_setup_py']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core) by extension 'python_setup_py'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extensions ['ignore', 'ignore_ament_install']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extension 'ignore'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extension 'ignore_ament_install'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extensions ['colcon_pkg']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extension 'colcon_pkg'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extensions ['colcon_meta']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extension 'colcon_meta'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extensions ['ros']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extension 'ros'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extensions ['cmake', 'python']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extension 'cmake'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extension 'python'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extensions ['python_setup_py']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(build-testui-Desktop-Debug/ament_cmake_core/stamps) by extension 'python_setup_py'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.149s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extensions ['ignore', 'ignore_ament_install']
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extension 'ignore'
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extension 'ignore_ament_install'
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extensions ['colcon_pkg']
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extension 'colcon_pkg'
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extensions ['colcon_meta']
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extension 'colcon_meta'
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extensions ['ros']
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extension 'ros'
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extensions ['cmake', 'python']
+[0.150s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extension 'cmake'
+[0.151s] Level 1:colcon.colcon_core.package_identification:_identify(testui) by extension 'python'
+[0.151s] DEBUG:colcon.colcon_core.package_identification:Package 'testui' with type 'cmake' and name 'testui'
+[0.151s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.151s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.151s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.151s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.151s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.170s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.170s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.171s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 0 installed packages in /home/daniel/ros2_ws/install
+[0.172s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 341 installed packages in /opt/ros/humble
+[0.174s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.209s] Level 5:colcon.colcon_core.verb:set package 'testui' build argument 'cmake_args' from command line to 'None'
+[0.209s] Level 5:colcon.colcon_core.verb:set package 'testui' build argument 'cmake_target' from command line to 'None'
+[0.209s] Level 5:colcon.colcon_core.verb:set package 'testui' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.209s] Level 5:colcon.colcon_core.verb:set package 'testui' build argument 'cmake_clean_cache' from command line to 'False'
+[0.209s] Level 5:colcon.colcon_core.verb:set package 'testui' build argument 'cmake_clean_first' from command line to 'False'
+[0.209s] Level 5:colcon.colcon_core.verb:set package 'testui' build argument 'cmake_force_configure' from command line to 'False'
+[0.209s] Level 5:colcon.colcon_core.verb:set package 'testui' build argument 'ament_cmake_args' from command line to 'None'
+[0.209s] Level 5:colcon.colcon_core.verb:set package 'testui' build argument 'catkin_cmake_args' from command line to 'None'
+[0.209s] Level 5:colcon.colcon_core.verb:set package 'testui' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.209s] DEBUG:colcon.colcon_core.verb:Building package 'testui' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/daniel/git/Robotics2/src/picasso_ui/build/testui', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/daniel/git/Robotics2/src/picasso_ui/install/testui', 'merge_install': False, 'path': '/home/daniel/git/Robotics2/src/picasso_ui/testui', 'symlink_install': True, 'test_result_base': None}
+[0.209s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.211s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.211s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/daniel/git/Robotics2/src/picasso_ui/testui'
+[0.213s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.213s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.213s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.221s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui': /usr/bin/cmake /home/daniel/git/Robotics2/src/picasso_ui/testui -DCMAKE_INSTALL_PREFIX=/home/daniel/git/Robotics2/src/picasso_ui/install/testui
+[0.624s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui' returned '1': /usr/bin/cmake /home/daniel/git/Robotics2/src/picasso_ui/testui -DCMAKE_INSTALL_PREFIX=/home/daniel/git/Robotics2/src/picasso_ui/install/testui
+[0.634s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[0.634s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[0.634s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '1'
+[0.634s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[0.640s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[0.640s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[0.640s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[0.652s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[0.653s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/daniel/git/Robotics2/src/picasso_ui/install/local_setup.ps1'
+[0.653s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/daniel/git/Robotics2/src/picasso_ui/install/_local_setup_util_ps1.py'
+[0.655s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/daniel/git/Robotics2/src/picasso_ui/install/setup.ps1'
+[0.655s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/daniel/git/Robotics2/src/picasso_ui/install/local_setup.sh'
+[0.656s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/daniel/git/Robotics2/src/picasso_ui/install/_local_setup_util_sh.py'
+[0.656s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/daniel/git/Robotics2/src/picasso_ui/install/setup.sh'
+[0.657s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/daniel/git/Robotics2/src/picasso_ui/install/local_setup.bash'
+[0.658s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/daniel/git/Robotics2/src/picasso_ui/install/setup.bash'
+[0.658s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/daniel/git/Robotics2/src/picasso_ui/install/local_setup.zsh'
+[0.659s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/daniel/git/Robotics2/src/picasso_ui/install/setup.zsh'
