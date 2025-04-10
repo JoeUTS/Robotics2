@@ -1,0 +1,3 @@
+Move all your mainwindow stuff into picasso_ui and then remove the mainwinow stuff from cmake
+
+- Joseph
