@@ -12,8 +12,12 @@
 // }
 
 #include <rclcpp/rclcpp.hpp>
+
 #include <QApplication>
-#include "picasso_ui.h" // Adjust the path based on the actual location of PicassoUI.h
+
+#include "testui/mainwindow.h"
+
+#include "picasso_ui.h"
 
 int main(int argc, char **argv)
 {

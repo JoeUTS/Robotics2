@@ -31,8 +31,8 @@ def generate_launch_description():
   urIP = '111.111.111.111'
   urController = 'joint_trajectory_controller'
   urMockHardware = LaunchConfiguration('ur_mock_hardware')
-  urStartDelay = 3.0  # [sec].
-  moveItStartDelay = 3.0  # [sec].
+  urStartDelay = 5.0  # [sec].
+  moveItStartDelay = 5.0  # [sec].
   launchRVIZ = LaunchConfiguration('launch_rviz')
 
   # nodes
@@ -45,13 +45,14 @@ def generate_launch_description():
 
   ur_sim_gz = IncludeLaunchDescription(
     PythonLaunchDescriptionSource([
-      os.path.join(get_package_share_directory('ur_simulation_gz'), 'launch'),
-      '/ur_sim_control.launch.py'
+      os.path.join(get_package_share_directory('ur_simulation_gazebo'), 'launch'),
+      '/ur_sim_moveit.launch.py'
     ]),
     launch_arguments={
       'ur_type': urType,
       "launch_rviz": "false",
-      "initial_joint_controller": urController
+      "initial_joint_controller": urController,
+      "gazebo_gui": "true"
     }.items(),
     condition=IfCondition(urMockHardware)
   )

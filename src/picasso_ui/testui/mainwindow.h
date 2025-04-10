@@ -19,7 +19,7 @@
 #include <QVBoxLayout>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
-#include "ros_image_to_qimage/ros_image_to_qimage.hpp"
+#include <ros_image_to_qimage/ros_image_to_qimage.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 

@@ -44,7 +44,7 @@ void imageController::editImageQuantize(cv::Mat &image, const int colourSteps) {
 
   // Replace each pixel with cluster value.
   cv::Vec3f *pixels = data.ptr<cv::Vec3f>();
-  for (size_t i = 0; i < data.rows; i++) {
+  for (size_t i = 0; i < static_cast<unsigned long>(data.rows); i++) {
     int centerId = labels.at<int>(i);
     pixels[i] = centers.at<cv::Vec3f>(centerId);
   }
@@ -56,7 +56,7 @@ void imageController::editImageQuantize(cv::Mat &image, const int colourSteps) {
 }
 
 cv::Scalar imageController::getNextColour(void) {
-  if (colourIndex_ >= COLOURS_LIST.size() - 1) {
+  if (static_cast<unsigned int>(colourIndex_) >= COLOURS_LIST.size() - 1) {
     colourIndex_ = 0;
   }
 
@@ -133,7 +133,7 @@ std::map<int, std::shared_ptr<Contour>> imageController::getContours(const cv::M
   cv::findContours(image, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
 
   // Generate contour list.
-  for (int i = 0; i < contours.size(); i++) {
+  for (unsigned int i = 0; i < contours.size(); i++) {
     contoursList.emplace(i, Contour::create(i, image, scale, contours[i]));
   }
 

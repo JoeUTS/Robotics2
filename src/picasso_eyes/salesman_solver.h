@@ -10,7 +10,7 @@
 
 #include "Contour.h"
 
-class SalesmanSolver : public rclcpp::Node {
+class SalesmanSolver {
 public:
   SalesmanSolver(void);
 
