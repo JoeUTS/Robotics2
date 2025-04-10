@@ -29,6 +29,7 @@
   <!-- arm -->
 
   <!-- UI -->
+  <depend>Qt5</depend>
 
   <!-- test -->
   <test_depend>ament_cmake_ros</test_depend>
