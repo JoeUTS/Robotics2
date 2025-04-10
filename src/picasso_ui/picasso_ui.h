@@ -1,20 +1,7 @@
-// #ifndef PICASSOUI_H
-// #define PICASSOUI_H
-
-// #include <rclcpp/rclcpp.hpp>
-
-// class PicassoUI : public rclcpp::Node {
-// public:
-//   PicassoUI(void);
-
-// private:
-
-// };
-
-// #endif // PICASSOUI_H
-
 #ifndef PICASSOUI_H
 #define PICASSOUI_H
+
+#include <memory>
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -29,19 +16,14 @@ class PicassoUI : public QMainWindow, public rclcpp::Node {
 
     public:
         PicassoUI(rclcpp::NodeOptions options);
-        PicassoUI();
-        ~PicassoUI();
 
     private slots:
         void onPushButtonClicked();
 
     
     private:
-        Ui::MainWindow *ui;
+        std::unique_ptr<Ui::MainWindow> ui_;
         rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
-
-    
-    
 };
 
 #endif // PICASSOUI_H

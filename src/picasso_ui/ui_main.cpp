@@ -23,8 +23,9 @@ int main(int argc, char **argv)
     auto ui = std::make_shared<PicassoUI>(rclcpp::NodeOptions());
     ui->show();
 
-    rclcpp::spin(std::make_shared<PicassoUI>());
-    rclcpp::shutdown();
+    auto executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+    executor->add_node(ui);
+    executor->spin();
 
     return app.exec();
 }
