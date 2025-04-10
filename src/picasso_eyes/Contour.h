@@ -41,7 +41,9 @@ public:
 
   // Gets contour head point.
 
-  
+  /// @brief 
+  /// @param  
+  /// @return 
   std::shared_ptr<geometry_msgs::msg::Point> getHead(void) {return points_.front();};
 
   // Gets contour tail point.
