@@ -19,18 +19,29 @@ public:
   }
 
   // Constructs contour object from a vector of cv::Points
+
+  /// @brief Constructor, sets ID. Not to be called directly, use Contour::create().
+  /// @param contourID ID of contour.
   Contour(const int contourID) : contourID_(contourID) {};
 
-  // Gets contour's ID
+  /// @brief ID getter.
+  /// @return int. contourID_.
   int getID(void) {return contourID_;};
 
-  // Gets drawn status.
+  /// @brief self pointer getter.
+  /// @return std::shared_ptr<Contour>. selfPtr_.
+  std::shared_ptr<Contour> getContourPtr(void) {return selfPtr_;};
+
+  /// @brief is drawn getter.
+  /// @return bool. isDrawn_.
   bool getDrawn(void) {return isDrawn_;};
 
-  // Sets drawn status.
+  /// @brief Drawn status setter true.
   void setDrawn(void) {isDrawn_ = true;};
 
   // Gets contour head point.
+
+  
   std::shared_ptr<geometry_msgs::msg::Point> getHead(void) {return points_.front();};
 
   // Gets contour tail point.
