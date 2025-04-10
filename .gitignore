@@ -6,12 +6,14 @@
 # build files
 build/*
 */build*
-*/install/*
 
 # log files
 log/*
 */log/*
-*/testui/*
+
+# install files
+install/*
+*/install/*
 
 # file types
 *.zip
