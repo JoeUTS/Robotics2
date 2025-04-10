@@ -17,6 +17,34 @@
   <depend>tf2_geometry_msgs</depend>
 
   <!-- eyes -->
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>libopencv-dev</build_depend>
+  <build_depend>image_transport</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>librealsense2</build_depend>
+  <build_depend>realsense2_camera_msgs</build_depend>
+  
+  <!-- arm -->
+  <build_depend>moveit_ros_planning_interface</build_depend>
+
+  <!-- UI -->
+
+  <!-- core -->
+  <exec_depend>rclcpp</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <!--<exec_depend>tf2</exec_depend>-->
+  <!--<exec_depend>tf2_ros</exec_depend>-->
+
+  <!-- eyes -->
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>libopencv-dev</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>librealsense2</exec_depend>
+  <exec_depend>realsense2_camera_msgs</exec_depend>
+
   <depend>ament_index_cpp</depend>
   <depend>sensor_msgs</depend>
   <depend>visualization_msgs</depend>
@@ -27,7 +55,8 @@
   <depend>realsense2_camera_msgs</depend>
   
   <!-- arm -->
-
+  <exec_depend>moveit_ros_planning_interface</exec_depend>
+ 
   <!-- UI -->
   <depend>Qt5</depend>
 

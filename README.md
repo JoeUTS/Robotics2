@@ -33,6 +33,10 @@ Ubuntu 22.04 LTS
 ### URDriver.
 > sudo apt-get install ros-humble-ur <br/> 
 
+<<<<<<< HEAD
+Gazebo Simulator(UR Simulation Compatible).
+https://github.com/UniversalRobots/Universal_Robots_ROS2_Gazebo_Simulation/tree/humble
+=======
 ### ur_simulation_gz
 !! file will need to be in ros2_ws/src either directly or as symbolic link. <br/> 
 > git clone -b humble https://github.com/UniversalRobots/Universal_Robots_ROS2_Gazebo_Simulation.git <br/> 
@@ -45,3 +49,4 @@ Ubuntu 22.04 LTS
 
 ### ros_image_to_qimage
 > sudo apt install ros-humble-ros-image-to-qimage <br/> 
+>>>>>>> 5dc2a702bb3e9da8e0f5724912d52a68c21edf38
