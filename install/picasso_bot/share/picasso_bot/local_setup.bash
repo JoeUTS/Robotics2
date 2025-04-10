@@ -1,0 +1,1 @@
+/home/joji/git/Robotics2/build/picasso_bot/ament_cmake_environment_hooks/local_setup.bash

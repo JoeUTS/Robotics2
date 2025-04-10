@@ -33,7 +33,7 @@ find_package(realsense2 REQUIRED)
 find_package(realsense2_camera_msgs REQUIRED)
 
 # Arm
-
+find_package(moveit_ros_planning_interface REQUIRED)
 # UI
 
 # Add include directories
@@ -47,6 +47,14 @@ include_directories(
 set(picasso_arm_dep
   ament_index_cpp
   rclcpp
+  sensor_msgs
+  geometry_msgs
+  OpenCV
+  cv_bridge
+  image_transport
+  realsense2
+  realsense2_camera_msgs
+  moveit_ros_planning_interface
   )
 
 set(picasso_arm_src
@@ -56,6 +64,7 @@ set(picasso_arm_src
 
 add_executable(picasso_arm ${picasso_arm_src})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
+
 
 # Eyes
 set(picasso_eyes_dep 
