@@ -1,1 +1,0 @@
-/home/joji/git/Robotics2/launch/picasso_arm_launch.py

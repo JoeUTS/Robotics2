@@ -1,1 +1,0 @@
-/home/joji/git/Robotics2/build/picasso_bot/ament_cmake_core/picasso_botConfig-version.cmake

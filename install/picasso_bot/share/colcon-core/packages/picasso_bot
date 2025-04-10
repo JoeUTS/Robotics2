@@ -1,1 +1,0 @@
-cv_bridge:geometry_msgs:image_transport:launch_ros:libopencv-dev:librealsense2:moveit_ros_planning_interface:rclcpp:realsense2_camera_msgs:sensor_msgs:std_msgs

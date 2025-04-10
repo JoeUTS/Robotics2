@@ -1,1 +1,0 @@
-/home/joji/git/Robotics2/config/placeholder.txt
