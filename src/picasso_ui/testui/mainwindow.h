@@ -17,6 +17,7 @@
 #include <QCameraImageCapture>
 #include <QCameraViewfinder>
 #include <QVBoxLayout>
+#include <QObject>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include "ros_image_to_qimage/ros_image_to_qimage.hpp"

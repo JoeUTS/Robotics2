@@ -3,10 +3,16 @@ project(picasso_bot)
 
 
 set(CMAKE_PREFIX_PATH /usr/lib/x86_64-linux-gnu/cmake/Qt5)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
+
+# Enable position-independent code for Qt
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
@@ -35,22 +41,20 @@ find_package(visualization_msgs REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package(realsense2_camera_msgs REQUIRED)
 
+
 # Arm
 
 # UI
-find_package(Qt5 REQUIRED COMPONENTS Widgets Core Gui)
+find_package(Qt5 REQUIRED COMPONENTS Widgets Core Multimedia MultimediaWidgets)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
-ament_target_dependencies(picasso_ui
-  rclcpp
-  std_msgs
-)
+find_package(ros_image_to_qimage REQUIRED)
 
 # Add include directories
 include_directories(
   src/picasso_arm
   src/picasso_eyes
-  src/picasso_ui
+  src/picasso_ui/testui
   
 )
 
@@ -89,11 +93,41 @@ set(picasso_eyes_src
   src/picasso_eyes/eyes_main.cpp
   src/picasso_eyes/picasso_eyes.cpp
   src/picasso_eyes/image_controller.cpp
+  src/picasso_eyes/salesman_solver.cpp
 )
 
-# add_executable(picasso_eyes ${picasso_eyes_src})
-#ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
+ add_executable(picasso_eyes ${picasso_eyes_src})
+ament_target_dependencies(picasso_eyes ${picasso_eyes_dep} geometry_msgs)
 #target_link_libraries(picasso_eyes ) # probably not needed. Holding onto incase needing to make imageControler a static library.
+
+       
+##UTesting for Eyes
+find_package(ament_cmake_gtest REQUIRED)
+
+ament_add_gtest(test_salesman_solver
+  src/picasso_eyes/test_salesman_solver.cpp
+  src/picasso_eyes/salesman_solver.cpp
+)
+
+
+  target_link_libraries(test_salesman_solver
+    gtest_main
+  )
+
+
+ament_target_dependencies(test_salesman_solver
+  rclcpp
+  std_msgs
+  rcl_interfaces
+
+)
+
+target_link_libraries(test_salesman_solver
+  gtest_main
+)
+
+add_dependencies(test_salesman_solver picasso_eyes)
+
 
 # UI
 set(picasso_ui_dep 
@@ -102,23 +136,38 @@ set(picasso_ui_dep
   )
 
 set (picasso_ui_src
-  src/picasso_ui/ui_main.cpp
-  src/picasso_ui/picasso_ui.cpp
+  src/picasso_ui/testui/mainwindow.cpp
+  src/picasso_ui/testui/picasso_ui.cpp
+)
+
+set(UI_FILES
+    mainwindow.ui
 )
 
 # target_link_libraries(picasso_ui.h Qt5::Widgets)
  include_directories(${Qt5Widgets_INCLUDE_DIRS})
+  include_directories(${Qt5Core_INCLUDE_DIRS})
+  include_directories(${Qt5Multimedia_INCLUDE_DIRS})
+  include_directories(${Qt5MultimediaWidgets_INCLUDE_DIRS})
  include_directories(${rclcpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
+ include_directories(${OpenCV_INCLUDE_DIRS})
 add_executable(picasso_ui ${picasso_ui_src})
 ament_target_dependencies(picasso_ui ${picasso_ui_dep})
-set(CMAKE_AUTOUIC ON) 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+ament_target_dependencies(picasso_ui
+  rclcpp
+  std_msgs
+  ros_image_to_qimage
+  OpenCV
+  cv_bridge
+  image_transport
+  sensor_msgs
+)
+
 
 
 install(TARGETS
   picasso_arm
- # picasso_eyes
+  picasso_eyes
   picasso_ui
   DESTINATION lib/${PROJECT_NAME})
 
@@ -140,3 +189,8 @@ endif()
 
 ament_export_dependencies(rosidl_default_runtime)
 ament_package()
+
+find_package(rcl_interfaces REQUIRED)
+
+include_directories(${geometry_msgs_INCLUDE_DIRS})
+

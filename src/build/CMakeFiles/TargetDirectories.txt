@@ -1,0 +1,11 @@
+/home/daniel/git/Robotics2/src/build/CMakeFiles/uninstall.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/testui_uninstall.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/testui.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/test.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/edit_cache.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/rebuild_cache.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/list_install_components.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/install.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/install/local.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/install/strip.dir
+/home/daniel/git/Robotics2/src/build/CMakeFiles/testui_autogen.dir

@@ -35,8 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Connect button
     connect(ui->startCamera, &QPushButton::clicked, this, &MainWindow::startCamera);
     connect(ui->captureImage, &QPushButton::clicked, this, &MainWindow::captureImage);
-  //  connect(ui->eStopButton, &QPushButton::clicked, this, &MainWindow::sendEmergencyStop);
-    
+    // connect(ui->eStopButton, &QPushButton::clicked, this, &MainWindow::sendEmergencyStop);
 }
 
 MainWindow::~MainWindow() {
