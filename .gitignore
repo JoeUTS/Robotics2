@@ -1,13 +1,19 @@
 # local workspace settings
 *.code-workspace
 .vscode/*
-*/.vscode
+*/.vscode/*
 
 # build files
 build/*
+*/build*
 
 # log files
 log/*
+*/log/*
+
+# install files
+install/*
+*/install/*
 
 # file types
 *.zip

@@ -18,8 +18,6 @@ public:
     return instance;
   }
 
-  // Constructs contour object from a vector of cv::Points
-
   /// @brief Constructor, sets ID. Not to be called directly, use Contour::create().
   /// @param contourID ID of contour.
   Contour(const int contourID) : contourID_(contourID) {};
@@ -39,17 +37,16 @@ public:
   /// @brief Drawn status setter true.
   void setDrawn(void) {isDrawn_ = true;};
 
-  // Gets contour head point.
-
-  /// @brief 
-  /// @param  
-  /// @return 
+  /// @brief first point getter.
+  /// @return std::shared_ptr<geometry_msgs::msg::Point>. points_.front().
   std::shared_ptr<geometry_msgs::msg::Point> getHead(void) {return points_.front();};
 
-  // Gets contour tail point.
+  /// @brief last point getter.
+  /// @return std::shared_ptr<geometry_msgs::msg::Point>. points_.back().
   std::shared_ptr<geometry_msgs::msg::Point> getTail(void) {return points_.back();};
 
-  // Gets forward contour path.
+  /// @brief Gets points list from start to end as a PoseArray.
+  /// @return geometry_msgs::msg::PoseArray. points_.
   geometry_msgs::msg::PoseArray getPath(void) {
     geometry_msgs::msg::PoseArray poseArray;
     poseArray.poses.reserve(points_.size());
@@ -63,7 +60,8 @@ public:
     return poseArray;
   };
 
-  // Gets reverse contour path.
+  /// @brief Gets points list from end to start as a PoseArray.
+  /// @return geometry_msgs::msg::PoseArray. points_.
   geometry_msgs::msg::PoseArray getPathBackwards(void) {
     geometry_msgs::msg::PoseArray poseArray;
     poseArray.poses.reserve(points_.size());
@@ -77,7 +75,8 @@ public:
     return poseArray;
   };
 
-  // Gets list of points.
+  /// @brief Get list of points as a vector of points.
+  /// @return std::vector<geometry_msgs::msg::Point>. points_.
   std::vector<geometry_msgs::msg::Point> getPoints(void) {
     std::vector<geometry_msgs::msg::Point> points;
 

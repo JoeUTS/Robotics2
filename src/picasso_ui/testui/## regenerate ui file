@@ -1,2 +1,0 @@
-uic /home/daniel/git/Robotics2/src/picasso_ui/testui/mainwindow.ui -o /home/daniel/git/Robotics2/src/picasso_ui/testui/ui_mainwindow.h
-

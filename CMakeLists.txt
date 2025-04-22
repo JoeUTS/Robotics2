@@ -25,11 +25,11 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-
 
 # Eyes
 find_package(ament_index_cpp)
@@ -43,6 +43,7 @@ find_package(realsense2_camera_msgs REQUIRED)
 
 
 # Arm
+find_package(moveit_ros_planning_interface REQUIRED)
 
 # UI
 find_package(Qt5 REQUIRED COMPONENTS Widgets Core Multimedia MultimediaWidgets)
@@ -62,6 +63,14 @@ include_directories(
 set(picasso_arm_dep
   ament_index_cpp
   rclcpp
+  sensor_msgs
+  geometry_msgs
+  OpenCV
+  cv_bridge
+  image_transport
+  realsense2
+  realsense2_camera_msgs
+  moveit_ros_planning_interface
   )
 
 set(picasso_arm_src
@@ -93,6 +102,7 @@ set(picasso_eyes_src
   src/picasso_eyes/eyes_main.cpp
   src/picasso_eyes/picasso_eyes.cpp
   src/picasso_eyes/image_controller.cpp
+  src/picasso_eyes/salesman_solver.cpp
   src/picasso_eyes/salesman_solver.cpp
 )
 
@@ -133,6 +143,8 @@ add_dependencies(test_salesman_solver picasso_eyes)
 set(picasso_ui_dep 
   ament_index_cpp 
   rclcpp
+  std_msgs
+  Qt5
   )
 
 set (picasso_ui_src
@@ -167,6 +179,7 @@ ament_target_dependencies(picasso_ui
 
 install(TARGETS
   picasso_arm
+  picasso_eyes
   picasso_eyes
   picasso_ui
   DESTINATION lib/${PROJECT_NAME})

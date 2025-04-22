@@ -1,5 +1,5 @@
-#ifndef SALSEMANSOLVER_H
-#define SALSEMANSOLVER_H
+#ifndef SALESMANSOLVER_H
+#define SALESMANSOLVER_H
 
 #include <map>
 #include <memory>
@@ -30,4 +30,4 @@ public:
   double computeDistance(const geometry_msgs::msg::Point& a, const geometry_msgs::msg::Point& b) const;
 };
 
-#endif // SALSEMANSOLVER_H
+#endif // SALESMANSOLVER_H

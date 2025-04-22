@@ -1,2 +1,0 @@
-Invoking command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui': /usr/bin/cmake --build /home/daniel/git/Robotics2/src/picasso_ui/build/testui -- -j16 -l16
-Invoked command in '/home/daniel/git/Robotics2/src/picasso_ui/build/testui' returned '0': /usr/bin/cmake --build /home/daniel/git/Robotics2/src/picasso_ui/build/testui -- -j16 -l16
