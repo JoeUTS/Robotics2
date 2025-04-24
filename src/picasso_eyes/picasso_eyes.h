@@ -23,6 +23,7 @@
 
 #include "image_controller.h"
 #include "Contour.h"
+#include "salesman_solver.h"
 
 /*
 Camera is realsense D435i
@@ -76,6 +77,7 @@ private:
   std::chrono::milliseconds timer_duration_{1000};
   
   std::shared_ptr<imageController> imageController_ = NULL;
+  std::shared_ptr<SalesmanSolver> salesmanSolver_ = NULL;
 
   geometry_msgs::msg::PoseArray outputPoseArray_; // Holds copy of last generated pose array msg.
 
@@ -89,7 +91,7 @@ private:
   /// @param blurKernalSize size of blur kernal.
   /// @param colourSteps Number of colours to reduce to.
   /// @return Vector of contours.
-  std::map<int, std::shared_ptr<Contour>> generateToolpath(cv::Mat &image, const float scale, const int blurPasses, const int blurKernalSize, const int colourSteps);
+  std::map<int, std::shared_ptr<Contour>> generateToolpath(cv::Mat &image, const bool normalise, const int blurPasses, const int blurKernalSize, const int colourSteps);
 
   /// @brief Temporary function for testing.
   void tempFunction(void);

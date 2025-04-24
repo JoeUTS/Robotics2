@@ -5,6 +5,9 @@
 #include <list>
 #include <memory>
 
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/logger.hpp"
+
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "geometry_msgs/msg/point.hpp"
 
@@ -12,15 +15,15 @@
 
 class Contour : public std::enable_shared_from_this<Contour> {
 public:
-  static std::shared_ptr<Contour> create(const int contourID, const cv::Mat &image, const float scale, std::vector<cv::Point> &contours) {
-    std::shared_ptr<Contour> instance = std::make_shared<Contour>(contourID);
-    instance->initialize(image, scale, contours);
+  static std::shared_ptr<Contour> create(const int contourID, std::vector<cv::Point> &contours, cv::Mat &image, std::shared_ptr<rclcpp::Node> parentNode = NULL) {
+    std::shared_ptr<Contour> instance = std::make_shared<Contour>(contourID, parentNode);
+    instance->initialize(image, contours);
     return instance;
   }
 
   /// @brief Constructor, sets ID. Not to be called directly, use Contour::create().
   /// @param contourID ID of contour.
-  Contour(const int contourID) : contourID_(contourID) {};
+  Contour(const int contourID, std::shared_ptr<rclcpp::Node> parentNode) : contourID_(contourID), parentNode_(parentNode) {};
 
   /// @brief ID getter.
   /// @return int. contourID_.
@@ -91,21 +94,29 @@ private:
   const int contourID_;                             // Contour ID.
   bool isDrawn_ = false;                            // True if contour is complete.
   std::shared_ptr<Contour> selfPtr_;                // Pointer to self.
+  std::shared_ptr<rclcpp::Node> parentNode_;
   std::list<std::shared_ptr<geometry_msgs::msg::Point>> points_;     // Contour points.
 
   // Initializes contour object via converting path.
-  void initialize(const cv::Mat &image, const float scale, std::vector<cv::Point> &contours) {
+  void initialize(cv::Mat &image, std::vector<cv::Point> &contours) {
+    if (parentNode_ != NULL) {
+      RCLCPP_WARN(parentNode_->get_logger(), "Contour %d initializing", contourID_);
+    }
+
     // Convert points.
-    for (unsigned int i = 0; i < contours.size(); i++) {
+    for (unsigned int i = 0; i < contours.size() - 1; i++) {
       std::shared_ptr<geometry_msgs::msg::Point> pointMsg = std::make_shared<geometry_msgs::msg::Point>();
       
-      // Center image.
-      pointMsg->x -= image.cols / 2;
-      pointMsg->y -= image.rows / 2;
+      
+      if (!image.empty()) {
+        // Center image.
+        pointMsg->x -= image.cols / 2;
+        pointMsg->y -= image.rows / 2;
 
-      // Scale image.
-      pointMsg->x *= scale;
-      pointMsg->y *= scale;
+        // Normalise points to range 0-1.
+        pointMsg->x /= image.cols;
+        pointMsg->y /= image.rows;
+      }
       
       points_.push_back(pointMsg);
     }

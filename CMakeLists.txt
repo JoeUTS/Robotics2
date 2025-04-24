@@ -49,13 +49,20 @@ find_package(Qt5 REQUIRED COMPONENTS Widgets Core Multimedia MultimediaWidgets)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(ros_image_to_qimage REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 
 # Add include directories
+include_directories(${Qt5Widgets_INCLUDE_DIRS})
+include_directories(${Qt5Core_INCLUDE_DIRS})
+include_directories(${Qt5Multimedia_INCLUDE_DIRS})
+include_directories(${Qt5MultimediaWidgets_INCLUDE_DIRS})
+include_directories(${rclcpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
+include_directories(${OpenCV_INCLUDE_DIRS})
+include_directories(${geometry_msgs_INCLUDE_DIRS})
 include_directories(
   src/picasso_arm
   src/picasso_eyes
   src/picasso_ui/testui
-  
 )
 
 # Arm
@@ -107,14 +114,18 @@ set(picasso_eyes_src
 
 add_executable(picasso_eyes ${picasso_eyes_src})
 ament_target_dependencies(picasso_eyes ${picasso_eyes_dep} geometry_msgs)
-#target_link_libraries(picasso_eyes ) # probably not needed. Holding onto incase needing to make imageControler a static library.
 
 # UI
-set(picasso_ui_dep 
+set(picasso_ui_dep
   ament_index_cpp 
   rclcpp
   std_msgs
   Qt5
+  ros_image_to_qimage
+  OpenCV
+  cv_bridge
+  image_transport
+  sensor_msgs
   )
 
 set (picasso_ui_src
@@ -126,30 +137,14 @@ set(UI_FILES
     mainwindow.ui
 )
 
-# target_link_libraries(picasso_ui.h Qt5::Widgets)
-include_directories(${Qt5Widgets_INCLUDE_DIRS})
-include_directories(${Qt5Core_INCLUDE_DIRS})
-include_directories(${Qt5Multimedia_INCLUDE_DIRS})
-include_directories(${Qt5MultimediaWidgets_INCLUDE_DIRS})
-include_directories(${rclcpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
-include_directories(${OpenCV_INCLUDE_DIRS})
 add_executable(picasso_ui ${picasso_ui_src})
 ament_target_dependencies(picasso_ui ${picasso_ui_dep})
-ament_target_dependencies(picasso_ui
-  rclcpp
-  std_msgs
-  ros_image_to_qimage
-  OpenCV
-  cv_bridge
-  image_transport
-  sensor_msgs
-)
 
 # UTesting
 find_package(ament_cmake_gtest REQUIRED)
 
 ament_add_gtest(test_salesman_solver
-  src/picasso_eyes/test_salesman_solver.cpp
+  tests/test_salesman_solver.cpp
   src/picasso_eyes/salesman_solver.cpp
 )
 
@@ -161,11 +156,6 @@ ament_target_dependencies(test_salesman_solver
   rclcpp
   std_msgs
   rcl_interfaces
-
-)
-
-target_link_libraries(test_salesman_solver
-  gtest_main
 )
 
 add_dependencies(test_salesman_solver picasso_eyes)
@@ -183,6 +173,7 @@ install(
   launch
   rviz
   worlds
+  tests
   DESTINATION share/${PROJECT_NAME}
 )
 
@@ -195,8 +186,3 @@ endif()
 
 ament_export_dependencies(rosidl_default_runtime)
 ament_package()
-
-find_package(rcl_interfaces REQUIRED)
-
-include_directories(${geometry_msgs_INCLUDE_DIRS})
-
