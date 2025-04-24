@@ -3,8 +3,8 @@
 imageController::imageController(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) : lastCameraMsg_(*incomingMsg) {
   // Get paths to config files.
   std::string packageShareDir = ament_index_cpp::get_package_share_directory("picasso_bot");
-  std::string pathImageClasses = packageShareDir + "/config/coco-classes.txt";
-  std::string pathYOLO = packageShareDir + "/config/yolov8m-seg.onnx";
+  //std::string pathImageClasses = packageShareDir + "/config/coco-classes.txt";
+  //std::string pathYOLO = packageShareDir + "/config/yolov8m-seg.onnx";
 
   
 
