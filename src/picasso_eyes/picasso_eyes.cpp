@@ -177,3 +177,42 @@ void PicassoEyes::addMarkerPath(visualization_msgs::msg::MarkerArray &markerArra
 
   markerArray.markers.push_back(marker);
 }
+
+cv::Mat PicassoEyes::getSketchPreview() {
+  if (!imageController_) {
+      RCLCPP_ERROR(this->get_logger(), "ImageController is not initialized.");
+      return cv::Mat();
+  }
+
+  // Retrieve the stored image
+  cv::Mat imageRGB = imageController_->msg2Mat(imageController_->getStoredImage().rgb);
+  if (imageRGB.empty()) {
+      RCLCPP_ERROR(this->get_logger(), "No image available for sketch preview.");
+      return cv::Mat();
+  }
+
+  // Generate toolpaths
+  double canvasWidth = 5.0;  // Example canvas width in meters
+  double scaleToolpath = canvasWidth / imageRGB.cols;  // Scale to fit canvas
+  std::map<int, std::shared_ptr<Contour>> toolPaths = generateToolpath(imageRGB, scaleToolpath, 1, 3, 3);
+
+  // Create a blank image to draw the sketch
+  cv::Mat sketch = cv::Mat::zeros(imageRGB.size(), CV_8UC3);
+  for (auto &[key, contour] : toolPaths) {
+      // Convert ROS points to OpenCV points
+      std::vector<cv::Point> cvPoints = convertToCvPoints(contour->getPoints());
+
+      // Draw the contour on the sketch
+      cv::polylines(sketch, cvPoints, false, cv::Scalar(255, 255, 255), 1);
+  }
+
+  return sketch;
+}
+
+std::vector<cv::Point> PicassoEyes::convertToCvPoints(const std::vector<geometry_msgs::msg::Point> &rosPoints) {
+  std::vector<cv::Point> cvPoints;
+  for (const auto &rosPoint : rosPoints) {
+      cvPoints.emplace_back(cv::Point(static_cast<int>(rosPoint.x), static_cast<int>(rosPoint.y)));
+  }
+  return cvPoints;
+}

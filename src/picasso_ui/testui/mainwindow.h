@@ -23,6 +23,8 @@
 #include "ros_image_to_qimage/ros_image_to_qimage.hpp"
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
+#include "../../picasso_eyes/picasso_eyes.h"
+#include "../../picasso_eyes/image_controller.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -38,8 +40,11 @@ public:
 
 private slots:
     void startCamera();
+    void connectUR3();
     void captureImage();
     void sendEmergencyStop();
+    void previewSketch();
+    
 
  //   void on_widget_customContextMenuRequested(const QPoint &pos);
 
@@ -57,6 +62,8 @@ private:
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
     //auto node = rclcpp::Node::make_shared("image_publisher_node");
    // auto publisher = node->create_publisher<sensor_msgs::msg::Image>("image_topic", 10);
-
+   
+    PicassoEyes *picassoEyesNode;
+    std::shared_ptr<imageController> imageController_;
 };
 #endif // MAINWINDOW_H

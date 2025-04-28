@@ -30,6 +30,7 @@ public:
     QWidget *viewfinderPlaceholder;
     QPushButton *captureImage;
     QPushButton *processImage;
+    QPushButton *connectUR3;
     QWidget *widget_3;
     QPushButton *startDrawing;
     QPushButton *eStopButton;
@@ -57,7 +58,7 @@ public:
 "border-radius: 10px;"));
         startCamera = new QPushButton(widget);
         startCamera->setObjectName(QString::fromUtf8("startCamera"));
-        startCamera->setGeometry(QRect(10, 10, 121, 31));
+        startCamera->setGeometry(QRect(10, 10, 111, 31));
         startCamera->setStyleSheet(QString::fromUtf8("background: white;"));
         viewfinderPlaceholder = new QWidget(widget);
         viewfinderPlaceholder->setObjectName(QString::fromUtf8("viewfinderPlaceholder"));
@@ -71,6 +72,10 @@ public:
         processImage->setObjectName(QString::fromUtf8("processImage"));
         processImage->setGeometry(QRect(10, 230, 121, 31));
         processImage->setStyleSheet(QString::fromUtf8("background: white;"));
+        connectUR3 = new QPushButton(widget);
+        connectUR3->setObjectName(QString::fromUtf8("connectUR3"));
+        connectUR3->setGeometry(QRect(130, 10, 91, 31));
+        connectUR3->setStyleSheet(QString::fromUtf8("background: white;"));
         widget_3 = new QWidget(centralwidget);
         widget_3->setObjectName(QString::fromUtf8("widget_3"));
         widget_3->setGeometry(QRect(460, 0, 231, 271));
@@ -125,9 +130,10 @@ public:
     void retranslateUi(QMainWindow *MainWindow)
     {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
-        startCamera->setText(QCoreApplication::translate("MainWindow", "Start Camera", nullptr));
+        startCamera->setText(QCoreApplication::translate("MainWindow", "Connect Camera", nullptr));
         captureImage->setText(QCoreApplication::translate("MainWindow", "Capture Image", nullptr));
         processImage->setText(QCoreApplication::translate("MainWindow", "Process Image", nullptr));
+        connectUR3->setText(QCoreApplication::translate("MainWindow", "Connect UR3", nullptr));
         startDrawing->setText(QCoreApplication::translate("MainWindow", "Start Drawing", nullptr));
         eStopButton->setText(QCoreApplication::translate("MainWindow", "Emergency Stop", nullptr));
         label->setText(QCoreApplication::translate("MainWindow", "Adjust Robot Speed", nullptr));

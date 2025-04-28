@@ -14,6 +14,7 @@
         "qtmultimediadepends": "cpp",
         "qvboxlayout": "cpp",
         "qcamera": "cpp",
-        "qcameraimagecapture": "cpp"
+        "qcameraimagecapture": "cpp",
+        "functional": "cpp"
     }
 }

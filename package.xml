@@ -9,12 +9,12 @@
   
   <!-- core -->
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <depend>rclcpp</depend>
+  <!-- <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
-  <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_geometry_msgs</depend> -->
 
   <!-- eyes -->
   <build_depend>sensor_msgs</build_depend>
@@ -45,14 +45,14 @@
   <exec_depend>librealsense2</exec_depend>
   <exec_depend>realsense2_camera_msgs</exec_depend>
 
-  <depend>ament_index_cpp</depend>
+  <!-- <depend>ament_index_cpp</depend>
   <depend>sensor_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>libopencv-dev</depend>
   <depend>image_transport</depend>
   <depend>cv_bridge</depend>
   <depend>librealsense2</depend>
-  <depend>realsense2_camera_msgs</depend>
+  <depend>realsense2_camera_msgs</depend> -->
   
   <!-- arm -->
   <exec_depend>moveit_ros_planning_interface</exec_depend>

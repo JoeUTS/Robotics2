@@ -22,6 +22,8 @@ public:
 
   void solve();
 
+  
+
   private:
   std::map<int, std::shared_ptr<Contour>> contourList_; // List of contours.
 

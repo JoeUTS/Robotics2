@@ -56,7 +56,8 @@ include_directories(
   src/picasso_arm
   src/picasso_eyes
   src/picasso_ui/testui
-  
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_ui/testui
 )
 
 # Arm
@@ -102,7 +103,6 @@ set(picasso_eyes_src
   src/picasso_eyes/eyes_main.cpp
   src/picasso_eyes/picasso_eyes.cpp
   src/picasso_eyes/image_controller.cpp
-  src/picasso_eyes/salesman_solver.cpp
   src/picasso_eyes/salesman_solver.cpp
 )
 
@@ -150,6 +150,9 @@ set(picasso_ui_dep
 set (picasso_ui_src
   src/picasso_ui/testui/mainwindow.cpp
   src/picasso_ui/testui/picasso_ui.cpp
+  src/picasso_eyes/picasso_eyes.cpp
+  src/picasso_eyes/image_controller.cpp
+  src/picasso_eyes/salesman_solver.cpp
 )
 
 set(UI_FILES
@@ -173,6 +176,12 @@ ament_target_dependencies(picasso_ui
   cv_bridge
   image_transport
   sensor_msgs
+  visualization_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  realsense2
+  realsense2_camera_msgs
 )
 
 
@@ -192,6 +201,7 @@ install(
   worlds
   DESTINATION share/${PROJECT_NAME}
 )
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

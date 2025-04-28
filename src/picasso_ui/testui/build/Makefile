@@ -97,7 +97,7 @@ rebuild_cache/fast: rebuild_cache
 
 # Special rule for the target list_install_components
 list_install_components:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Available install components are: \"Unspecified\""
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Only default component available"
 .PHONY : list_install_components
 
 # Special rule for the target list_install_components
@@ -223,54 +223,6 @@ testui_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/testui_autogen.dir/build.make CMakeFiles/testui_autogen.dir/build
 .PHONY : testui_autogen/fast
 
-main.o: main.cpp.o
-.PHONY : main.o
-
-# target to build an object file
-main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/testui.dir/build.make CMakeFiles/testui.dir/main.cpp.o
-.PHONY : main.cpp.o
-
-main.i: main.cpp.i
-.PHONY : main.i
-
-# target to preprocess a source file
-main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/testui.dir/build.make CMakeFiles/testui.dir/main.cpp.i
-.PHONY : main.cpp.i
-
-main.s: main.cpp.s
-.PHONY : main.s
-
-# target to generate assembly for a file
-main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/testui.dir/build.make CMakeFiles/testui.dir/main.cpp.s
-.PHONY : main.cpp.s
-
-mainwindow.o: mainwindow.cpp.o
-.PHONY : mainwindow.o
-
-# target to build an object file
-mainwindow.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/testui.dir/build.make CMakeFiles/testui.dir/mainwindow.cpp.o
-.PHONY : mainwindow.cpp.o
-
-mainwindow.i: mainwindow.cpp.i
-.PHONY : mainwindow.i
-
-# target to preprocess a source file
-mainwindow.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/testui.dir/build.make CMakeFiles/testui.dir/mainwindow.cpp.i
-.PHONY : mainwindow.cpp.i
-
-mainwindow.s: mainwindow.cpp.s
-.PHONY : mainwindow.s
-
-# target to generate assembly for a file
-mainwindow.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/testui.dir/build.make CMakeFiles/testui.dir/mainwindow.cpp.s
-.PHONY : mainwindow.cpp.s
-
 testui_autogen/mocs_compilation.o: testui_autogen/mocs_compilation.cpp.o
 .PHONY : testui_autogen/mocs_compilation.o
 
@@ -312,12 +264,6 @@ help:
 	@echo "... testui_uninstall"
 	@echo "... uninstall"
 	@echo "... testui"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
-	@echo "... mainwindow.o"
-	@echo "... mainwindow.i"
-	@echo "... mainwindow.s"
 	@echo "... testui_autogen/mocs_compilation.o"
 	@echo "... testui_autogen/mocs_compilation.i"
 	@echo "... testui_autogen/mocs_compilation.s"

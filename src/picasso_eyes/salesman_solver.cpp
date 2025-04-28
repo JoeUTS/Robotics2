@@ -28,24 +28,24 @@ void SalesmanSolver::solve() {
   travelOrder_.clear();
 
   if (contourList_.empty()) {
-    RCLCPP_WARN(this->get_logger(), "Contour list is empty.");
+    RCLCPP_WARN(this->get_logger(), "Contour list is empty");
     return;
   }
 
-  std::vector<int> keys;
+  std::vector<int> keys; // Vector to hold the keys of the contour list, which are the contour IDs
   for (const auto& [key, _] : contourList_) {
-    keys.push_back(key);
+    keys.push_back(key); 
   }
 
   std::vector<int> bestOrder;
-  double minDistance = std::numeric_limits<double>::max();
+  double minDistance = std::numeric_limits<double>::max(); 
 
   do {
     double totalDistance = 0.0;
-    for (size_t i = 0; i < keys.size() - 1; ++i) {
-      auto from = contourList_.at(keys[i])->getHead();
-      auto to = contourList_.at(keys[i + 1])->getHead();
-      totalDistance += computeDistance(*from, *to);
+    for (size_t i = 0; i < keys.size() - 1; ++i) { // Loop through the keys
+      auto from = contourList_.at(keys[i])->getHead(); // Get the head of the contour
+      auto to = contourList_.at(keys[i + 1])->getHead(); // Get the head of the next contour
+      totalDistance += computeDistance(*from, *to); // Compute distance between the two points
     }
 
     if (totalDistance < minDistance) {
@@ -58,5 +58,5 @@ void SalesmanSolver::solve() {
     travelOrder_.emplace_back(key, true); // 'true' indicates the contour is active
   }
 
-  RCLCPP_INFO(this->get_logger(), "Total distance: %.2f", minDistance);
+  RCLCPP_INFO(this->get_logger(), "Total distance= %.2f", minDistance);
 }

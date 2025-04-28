@@ -8,8 +8,6 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/daniel/git/Robotics2/src/picasso_ui/testui/main.cpp" "CMakeFiles/testui.dir/main.cpp.o" "gcc" "CMakeFiles/testui.dir/main.cpp.o.d"
-  "/home/daniel/git/Robotics2/src/picasso_ui/testui/mainwindow.cpp" "CMakeFiles/testui.dir/mainwindow.cpp.o" "gcc" "CMakeFiles/testui.dir/mainwindow.cpp.o.d"
   "/home/daniel/git/Robotics2/src/build/testui_autogen/mocs_compilation.cpp" "CMakeFiles/testui.dir/testui_autogen/mocs_compilation.cpp.o" "gcc" "CMakeFiles/testui.dir/testui_autogen/mocs_compilation.cpp.o.d"
   )
 

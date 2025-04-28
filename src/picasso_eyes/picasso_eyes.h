@@ -64,7 +64,7 @@ https://github.com/IntelRealSense/librealsense/tree/development
 class PicassoEyes : public rclcpp::Node {
 public:
   PicassoEyes(void);
-
+  cv::Mat getSketchPreview();
 private:
   bool generationRunning_ = false;
   std::thread imageProcessThread_;
@@ -99,6 +99,8 @@ private:
   void addMarkerPoint(visualization_msgs::msg::MarkerArray &markerArray, const unsigned int id, const geometry_msgs::msg::Pose &pose, const geometry_msgs::msg::Vector3 &scale, const std_msgs::msg::ColorRGBA &colour);
 
   void addMarkerPath(visualization_msgs::msg::MarkerArray &markerArray, const unsigned int id, const std::vector<geometry_msgs::msg::Point> &points, const geometry_msgs::msg::Vector3 &scale, const std_msgs::msg::ColorRGBA &colour);
+
+  std::vector<cv::Point> convertToCvPoints(const std::vector<geometry_msgs::msg::Point> &rosPoints);
 };
 
 #endif // PICASSOEYES_H

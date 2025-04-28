@@ -36,7 +36,7 @@ border-radius: 10px;</string>
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>121</width>
+       <width>111</width>
        <height>31</height>
       </rect>
      </property>
@@ -44,7 +44,7 @@ border-radius: 10px;</string>
       <string notr="true">background: white;</string>
      </property>
      <property name="text">
-      <string>Start Camera</string>
+      <string>Connect Camera</string>
      </property>
     </widget>
     <widget class="QWidget" name="viewfinderPlaceholder" native="true">
@@ -90,6 +90,22 @@ border-radius: 10px;</string>
      </property>
      <property name="text">
       <string>Process Image</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="connectUR3">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>10</y>
+       <width>91</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background: white;</string>
+     </property>
+     <property name="text">
+      <string>Connect UR3</string>
      </property>
     </widget>
    </widget>

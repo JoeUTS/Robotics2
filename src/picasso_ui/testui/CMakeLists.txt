@@ -123,13 +123,8 @@ install(TARGETS
   #testui
   DESTINATION lib/${PROJECT_NAME})
 
-install(
-  DIRECTORY
-  config
-  launch
-  #rviz
-  DESTINATION share/${PROJECT_N#include <Q_ObJECT>AME}
-)
+
+
 
 #target_include_directories(testui PRIVATE /opt/ros/humble/include)
 message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
