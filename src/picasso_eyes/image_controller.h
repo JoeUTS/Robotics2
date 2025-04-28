@@ -50,7 +50,7 @@ public:
   };
 
   /// @brief Constructor for imageController. 
-  imageController(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg);
+  imageController(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg, std::shared_ptr<rclcpp::Node> parentNode);
 
   /// @brief Updates the stored camera image message.
   /// @param incomingMsg 
@@ -122,7 +122,7 @@ public:
   /// @param image Input image. Must be single channel image.
   /// @param scale Value to scale image by.
   /// @return List of contour objects.
-  std::map<int, std::shared_ptr<Contour>> getContours(const cv::Mat &image, const float scale);
+  std::map<int, std::shared_ptr<Contour>> getToolpaths(const cv::Mat &image, const bool normalise = false);
 
   /// @brief Calculate averate intensity of image. 
   /// @param image Input image.
@@ -132,7 +132,9 @@ public:
 private:
   // system objects.
   std::mutex mutex_;  // Stored image mutex.
-
+  std::shared_ptr<rclcpp::Node> parentNode_ = NULL; // Parent node.
+  
+  cv::Mat storedImage_; // Stored camera image.
   int colourIndex_ = 0; // Index of next colour in colour list.
   
   // Threadding stuff.

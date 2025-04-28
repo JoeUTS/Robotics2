@@ -1,12 +1,11 @@
 #include "image_controller.h"
 
-imageController::imageController(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) : lastCameraMsg_(*incomingMsg) {
+imageController::imageController(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg, std::shared_ptr<rclcpp::Node> parentNode) 
+  : lastCameraMsg_(*incomingMsg), parentNode_(parentNode) {
   // Get paths to config files.
   std::string packageShareDir = ament_index_cpp::get_package_share_directory("picasso_bot");
-  std::string pathImageClasses = packageShareDir + "/config/coco-classes.txt";
-  std::string pathYOLO = packageShareDir + "/config/yolov8m-seg.onnx";
-
-  
+  //std::string pathImageClasses = packageShareDir + "/config/coco-classes.txt";
+  //std::string pathYOLO = packageShareDir + "/config/yolov8m-seg.onnx";
 
 }
 
@@ -124,17 +123,23 @@ void imageController::detectEdges(cv::Mat &image, float thresh) {
   cv::Canny(image, image, lower, upper);
 }
 
-std::map<int, std::shared_ptr<Contour>> imageController::getContours(const cv::Mat &image, const float scale) {
+std::map<int, std::shared_ptr<Contour>> imageController::getToolpaths(const cv::Mat &image, const bool normalise) {
   std::map<int, std::shared_ptr<Contour>> contoursList;
 
   // Find contours.
   std::vector<std::vector<cv::Point>> contours;
-  std::vector<cv::Vec4i> hierarchy;  // TO DO: Find how/if to use.
+  std::vector<cv::Vec4i> hierarchy;
   cv::findContours(image, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+  int indexMod = 0;
 
-  // Generate contour list.
-  for (int i = 0; i < contours.size(); i++) {
-    contoursList.emplace(i, Contour::create(i, image, scale, contours[i]));
+  for (int i = 0; i < contours.size() - 1; i++) {
+    if (contours.at(i).size() < 2) {
+      indexMod++;
+      continue;
+    }
+
+    std::shared_ptr<Contour> contourPtr = Contour::create(i - indexMod, contours.at(i), image, parentNode_);
+    contoursList.insert(std::pair<int, std::shared_ptr<Contour>>(i - indexMod,  contourPtr));
   }
 
   return contoursList;
@@ -181,8 +186,8 @@ void imageController::generateArt(void) {
   toolPaths.reserve(contours.size());
 
   for (std::vector<cv::Point> &contour : contours) {
-    std::shared_ptr<Contour> contourPtr = Contour::create(toolPaths.size(), imageRGB, 1.0, contour);
-    toolPaths.push_back(contourPtr);
+    //std::shared_ptr<Contour> contourPtr = Contour::create(toolPaths.size(), imageRGB, 1.0, contour);
+    //toolPaths.push_back(contourPtr);
   }
 
   cv::imshow("output", edges);

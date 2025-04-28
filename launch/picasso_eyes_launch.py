@@ -26,10 +26,9 @@ def generate_launch_description():
     package="picasso_bot",
     executable="picasso_eyes",
     name="node_picasso_eyes",
-    output="screen"
+    output="screen",
+    emulate_tty=True
   )
- 
-  # TO DO: Make a node to activate the process with 5 sec timer.
 
   realsense_camera = IncludeLaunchDescription(
     PythonLaunchDescriptionSource([

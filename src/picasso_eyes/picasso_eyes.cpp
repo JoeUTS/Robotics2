@@ -11,12 +11,11 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
 
   timer_ = this->create_wall_timer(
     timer_duration_, std::bind(&PicassoEyes::tempFunction, this));
-
 }
 
 void PicassoEyes::cameraReceiveCallback(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
   if (imageController_ == NULL) {
-    imageController_ = std::make_shared<imageController>(incomingMsg);
+    imageController_ = std::make_shared<imageController>(incomingMsg, this->shared_from_this());
     
   } else {
     sensor_msgs::msg::Image cameraImage = imageController_->updateCameraImage(incomingMsg);
@@ -24,7 +23,7 @@ void PicassoEyes::cameraReceiveCallback(const realsense2_camera_msgs::msg::RGBD:
   }
 }
 
-std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &image, const float scale, const int blurPasses, const int blurKernalSize, const int colourSteps) {
+std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &image, const bool normalise, const int blurPasses, const int blurKernalSize, const int colourSteps) {
   std::map<int, std::shared_ptr<Contour>> toolPaths;
 
   // Return on empty msg.
@@ -47,7 +46,7 @@ std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &i
   imageController_->detectEdges(edges, 0.1);
 
   // Generate contours.
-  toolPaths = imageController_->getContours(edges, scale);
+  toolPaths = imageController_->getToolpaths(edges, true);
 
   return toolPaths;
 }
@@ -58,7 +57,7 @@ void PicassoEyes::tempFunction(void) {
   if (imageRGB.empty()) {
     return;
   }
-
+  
   RCLCPP_WARN(this->get_logger(), "Function running");
 
   // Function settings.
@@ -98,13 +97,16 @@ void PicassoEyes::tempFunction(void) {
   // Localise people.
   // TO DO
   // - Return an array of detected people with location, size, bounding box ect.
-
+  std::list<geometry_msgs::msg::Vector3> personImageLocations;
 
   // Remove background
   // TO DO
 
   // Generate toolpaths34
-  std::map<int, std::shared_ptr<Contour>> toolPaths = generateToolpath(imageRGB, scaleToolpath, 1, 3, 3);
+  const int blurPasses = 1;
+  const int blurKernalSize = 3;
+  const int colourSteps = 3;
+  std::map<int, std::shared_ptr<Contour>> toolPaths = generateToolpath(imageRGB, true, blurPasses, blurKernalSize, colourSteps);
 
   // Generate toolpaths visualization
   visualization_msgs::msg::MarkerArray markerArrayToolpath;
@@ -116,9 +118,9 @@ void PicassoEyes::tempFunction(void) {
     geometry_msgs::msg::Pose poseTail;
     poseTail.position = *contour->getTail();
 
-    addMarkerPoint(markerArrayToolpath, markerId++, poseHead, scalePoint, colourHead);
-    addMarkerPoint(markerArrayToolpath, markerId++, poseTail, scalePoint, colourHead);
-    addMarkerPath(markerArrayToolpath, markerId++, contour->getPoints(), scaleLine, colourPath);
+    //addMarkerPoint(markerArrayToolpath, markerId++, poseHead, scalePoint, colourHead);
+    //addMarkerPoint(markerArrayToolpath, markerId++, poseTail, scalePoint, colourHead);
+    //addMarkerPath(markerArrayToolpath, markerId++, contour->getPoints(), scaleLine, colourPath);
   }
 
   // Publish visualization
@@ -128,12 +130,17 @@ void PicassoEyes::tempFunction(void) {
 
   pubVis_->publish(markerArrayToolpath);
   
-  
   // Perform TSP
-  // TO DO
+  if (salesmanSolver_ == NULL) {
+    salesmanSolver_ = std::make_shared<SalesmanSolver>(this->shared_from_this());
+  }
 
+  salesmanSolver_->setContourList(toolPaths);
+  salesmanSolver_->solve();
+  salesmanSolver_->getTravelOrder();
+  
   // Publish pose array vs send via service
-
+  
 }
 
 geometry_msgs::msg::Quaternion PicassoEyes::rpyToQuaternion(const double roll, const double pitch, const double yaw) {
