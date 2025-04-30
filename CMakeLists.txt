@@ -1,18 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 project(picasso_bot)
 
-
-set(CMAKE_PREFIX_PATH /usr/lib/x86_64-linux-gnu/cmake/Qt5)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
-
-# Enable position-independent code for Qt
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
@@ -20,56 +11,41 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
-# find dependencies
-# Core
+# Required for QT
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+# Dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-
-# Eyes
-find_package(ament_index_cpp)
 find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(visualization_msgs REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package(realsense2_camera_msgs REQUIRED)
-
-# Arm
 find_package(moveit_ros_planning_interface REQUIRED)
-
-# UI
 find_package(Qt5 REQUIRED COMPONENTS Widgets Core Multimedia MultimediaWidgets)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
 find_package(ros_image_to_qimage REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 
 # Add include directories
-# You should have these in your c_cpp_properties.json
-# qt5: "/usr/include/x86_64-linux-gnu/qt5/**" or "/usr/lib/qt5/include/**"
-#include_directories(${Qt5Widgets_INCLUDE_DIRS})
-#include_directories(${Qt5Core_INCLUDE_DIRS})
-#include_directories(${Qt5Multimedia_INCLUDE_DIRS})
-#include_directories(${Qt5MultimediaWidgets_INCLUDE_DIRS})
+# qt5: "/usr/include/x86_64-linux-gnu/qt5/**"
 # ROS: "/opt/ros/humble/include/**"
-#include_directories(${rclcpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
-#include_directories(${geometry_msgs_INCLUDE_DIRS})
-# openCV: "/usr/include/opencv4/**" or "/usr/include/**",
-#include_directories(${OpenCV_INCLUDE_DIRS})
+# openCV: "/usr/include/opencv4/**"
 
 include_directories(
   src/picasso_arm
   src/picasso_eyes
-  src/picasso_ui/testui
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_ui/testui
+  src/picasso_ui
 )
 
 # Arm
@@ -84,7 +60,7 @@ set(picasso_arm_dep
   realsense2
   realsense2_camera_msgs
   moveit_ros_planning_interface
-  )
+)
 
 set(picasso_arm_src
   src/picasso_arm/arm_main.cpp
@@ -110,7 +86,7 @@ set(picasso_eyes_dep
   tf2
   tf2_ros
   tf2_geometry_msgs
-  )
+)
 
 set(picasso_eyes_src
   src/picasso_eyes/eyes_main.cpp
@@ -134,22 +110,30 @@ set(picasso_ui_dep
   cv_bridge
   image_transport
   sensor_msgs
-  )
+  visualization_msgs
+  realsense2
+  realsense2_camera_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
 
 set (picasso_ui_src
-  src/picasso_ui/testui/mainwindow.cpp
-  src/picasso_ui/testui/picasso_ui.cpp
-  src/picasso_eyes/picasso_eyes.cpp
-  src/picasso_eyes/image_controller.cpp
-  src/picasso_eyes/salesman_solver.cpp
+  src/picasso_ui/mainwindow.cpp
+  src/picasso_ui/ui_main.cpp
 )
 
 set(UI_FILES
-    mainwindow.ui
+  src/picasso_ui/mainwindow.ui
 )
 
-add_executable(picasso_ui ${picasso_ui_src})
+add_executable(picasso_ui ${picasso_ui_src} ${UI_FILES})
 ament_target_dependencies(picasso_ui ${picasso_ui_dep})
+target_link_libraries(picasso_ui
+  Qt5::Widgets
+  Qt5::Multimedia
+  Qt5::MultimediaWidgets
+)
 
 # UTesting
 find_package(ament_cmake_gtest REQUIRED)
@@ -185,14 +169,14 @@ ament_target_dependencies(test_salesman_solver
 install(TARGETS
   picasso_arm
   picasso_eyes
-  picasso_eyes
   picasso_ui
-  DESTINATION lib/${PROJECT_NAME})
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(
   DIRECTORY
   config
-  local # test
+  local # Comment out if causing build issues
   launch
   rviz
   worlds

@@ -1,7 +1,7 @@
 # local workspace settings
 *.code-workspace
 .vscode/*
-*/.vscode/*
+**/.vscode/**
 
 # local folder
 local/*

@@ -4,11 +4,10 @@
 #include <vector>
 #include <memory>
 
-#include "rclcpp/rclcpp.hpp"
-#include "rclcpp/logger.hpp"
-
-#include "geometry_msgs/msg/pose_array.hpp"
-#include "geometry_msgs/msg/point.hpp"
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/logger.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
+#include <geometry_msgs/msg/point.hpp>
 
 class Contour : public std::enable_shared_from_this<Contour> {
 public:
