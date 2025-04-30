@@ -19,15 +19,40 @@ void PicassoEyes::cameraReceiveCallback(const realsense2_camera_msgs::msg::RGBD:
     
   } else {
     sensor_msgs::msg::Image cameraImage = imageController_->updateCameraImage(incomingMsg);
-    pubCameraImage_->publish(cameraImage);  // TO DO: make compressed version
+    compressImage(cameraImage, 80);
+    pubCameraImage_->publish(cameraImage);
   }
 }
 
-std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &image, const bool normalise, const int blurPasses, const int blurKernalSize, const int colourSteps) {
+sensor_msgs::msg::Image PicassoEyes::compressImage(sensor_msgs::msg::Image &imageMsg, const int quality) {
+  std::vector<uchar> buffer;
+  std::vector<int> compression_params;
+  compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
+  compression_params.push_back(quality);
+  cv::imencode(".jpg", imageController_->msg2Mat(imageMsg), buffer, compression_params);
+
+  auto compressedMsg = sensor_msgs::msg::Image();
+  compressedMsg.header = imageMsg.header;
+  compressedMsg.height = imageMsg.height;
+  compressedMsg.width = imageMsg.width;
+  compressedMsg.encoding = "jpeg";
+  compressedMsg.is_bigendian = 0;
+  compressedMsg.step = 0;
+  compressedMsg.data.assign(buffer.begin(), buffer.end());
+  
+  return compressedMsg;
+}
+
+std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &image, 
+                                                                      const bool normalise, 
+                                                                      const int blurPasses, 
+                                                                      const int blurKernalSize, 
+                                                                      const int colourSteps) {
   std::map<int, std::shared_ptr<Contour>> toolPaths;
 
   // Return on empty msg.
   if (image.empty()) {
+    RCLCPP_WARN(this->get_logger(), "Empty image");
     return toolPaths;
   }
   
@@ -46,7 +71,7 @@ std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &i
   imageController_->detectEdges(edges, 0.1);
 
   // Generate contours.
-  toolPaths = imageController_->getToolpaths(edges, true);
+  toolPaths = imageController_->getToolpaths(edges);
 
   return toolPaths;
 }
@@ -54,59 +79,80 @@ std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &i
 void PicassoEyes::tempFunction(void) {
   cv::Mat imageRGB = imageController_->msg2Mat(imageController_->getStoredImage().rgb);
 
+  //cv::Mat imageRGB = imread("local/resized_test_istockphoto.jpg", cv::IMREAD_UNCHANGED);
+
   if (imageRGB.empty()) {
     return;
   }
-  
-  RCLCPP_WARN(this->get_logger(), "Function running");
 
   // Function settings.
   // TO DO: Move elsewhere.
-  double canvasWidth = 5;  // m.
-  double scaleToolpath = canvasWidth / imageRGB.cols;  // Shrink to fit canvas.
-
   std_msgs::msg::ColorRGBA colourHead;
-  colourHead.r = 0;
-  colourHead.g = 1;
-  colourHead.b = 0;
-  colourHead.a = 1;
+  colourHead.r = 0.0;
+  colourHead.g = 1.0;
+  colourHead.b = 0.0;
+  colourHead.a = 1.0;
 
   std_msgs::msg::ColorRGBA colourTail;
-  colourTail.r = 1;
-  colourTail.g = 0;
-  colourTail.b = 0;
-  colourTail.a = 1;
+  colourTail.r = 1.0;
+  colourTail.g = 0.0;
+  colourTail.b = 0.0;
+  colourTail.a = 1.0;
 
   std_msgs::msg::ColorRGBA colourPath;
-  colourTail.r = 0;
-  colourTail.g = 0;
-  colourTail.b = 1;
-  colourTail.a = 1;
+  colourPath.r = 1.0;
+  colourPath.g = 1.0;
+  colourPath.b = 1.0;
+  colourPath.a = 1.0;
 
-  geometry_msgs::msg::Vector3 scalePoint;
-  scalePoint.x = 0.1;
-  scalePoint.y = 0.1;
-  scalePoint.z = 0.1;
+  geometry_msgs::msg::Vector3 scaleHead;
+  scaleHead.x = 0.001;
+  scaleHead.y = 0.001;
+  scaleHead.z = 0.02;
+
+  geometry_msgs::msg::Vector3 scaleTail;
+  scaleTail.x = 0.002;
+  scaleTail.y = 0.002;
+  scaleTail.z = 0.01;
 
   geometry_msgs::msg::Vector3 scaleLine;
-  scaleLine.x = 1;
-  scaleLine.y = 1;
-  scaleLine.z = 1;
-
+  scaleLine.x = 0.001;
 
   // Localise people.
   // TO DO
+  // Spin off new thread for this?
+  cv::Mat detectionImage = imageRGB.clone();
+  //std::vector<DetectedObject> detectedObjects = imageController_->detect(detectionImage);
+  std::vector<DetectedObject> detections = imageController_->detectSegment(detectionImage);
+  for (const auto& obj : detections) {
+    // You can now use obj.mask (a binary cv::Mat) for further processing
+    // For example, to apply the mask to the original image region:
+    cv::Mat object_region = detectionImage(obj.box);
+    cv::Mat masked_object;
+    object_region.copyTo(masked_object, obj.mask); // Apply the binary mask
+    cv::imshow("Masked Object", masked_object);
+  }
+  //std::vector<cv::Mat> detections = imageController_->detectPreProcess(detectionImage);
+  //cv::Mat img = imageController_->detectPostProcess(detectionImage, detections);
+  cv::imshow("image", detectionImage);
+  cv::waitKey(1);
+
   // - Return an array of detected people with location, size, bounding box ect.
   std::list<geometry_msgs::msg::Vector3> personImageLocations;
 
   // Remove background
   // TO DO
 
-  // Generate toolpaths34
+  // Generate toolpaths
   const int blurPasses = 1;
   const int blurKernalSize = 3;
   const int colourSteps = 3;
   std::map<int, std::shared_ptr<Contour>> toolPaths = generateToolpath(imageRGB, true, blurPasses, blurKernalSize, colourSteps);
+
+  if (toolPaths.empty()) {
+    RCLCPP_WARN(this->get_logger(), "Empty toolpaths");
+    return;
+  }
 
   // Generate toolpaths visualization
   visualization_msgs::msg::MarkerArray markerArrayToolpath;
@@ -114,36 +160,50 @@ void PicassoEyes::tempFunction(void) {
 
   for (auto &[key, contour] : toolPaths) {
     geometry_msgs::msg::Pose poseHead;
-    poseHead.position = *contour->getHead();
-    geometry_msgs::msg::Pose poseTail;
-    poseTail.position = *contour->getTail();
+    poseHead.position.x = contour->getHead()->x;
+    poseHead.position.y = contour->getHead()->y;
+    addMarkerPoint(markerArrayToolpath, markerId++, poseHead, scaleHead, colourHead);
 
-    //addMarkerPoint(markerArrayToolpath, markerId++, poseHead, scalePoint, colourHead);
-    //addMarkerPoint(markerArrayToolpath, markerId++, poseTail, scalePoint, colourHead);
-    //addMarkerPath(markerArrayToolpath, markerId++, contour->getPoints(), scaleLine, colourPath);
+    geometry_msgs::msg::Pose poseTail;
+    poseTail.position.x = contour->getTail()->x;
+    poseTail.position.y = contour->getTail()->y;
+    addMarkerPoint(markerArrayToolpath, markerId++, poseTail, scaleTail, colourTail);
+    
+    int sizeBefore = markerArrayToolpath.markers.size();
+    std::vector<geometry_msgs::msg::Point> path = contour->getPoints();
+    addMarkerPath(markerArrayToolpath, markerId++, path, scaleLine, colourPath);
+
+    int sizeDelta = markerArrayToolpath.markers.size() - sizeBefore;
+
+    if (sizeDelta > 1) {
+      RCLCPP_WARN(this->get_logger(), "Path working");
+    }
   }
 
   // Publish visualization
   if (markerArrayToolpath.markers.empty()) {
+    RCLCPP_WARN(this->get_logger(), "Empty markers");
     return;
   }
 
   pubVis_->publish(markerArrayToolpath);
   
   // Perform TSP
-  if (salesmanSolver_ == NULL) {
-    salesmanSolver_ = std::make_shared<SalesmanSolver>(this->shared_from_this());
-  }
+  //if (salesmanSolver_ == NULL) {
+    //salesmanSolver_ = std::make_shared<SalesmanSolver>(this->shared_from_this());
+  //}
 
-  salesmanSolver_->setContourList(toolPaths);
-  salesmanSolver_->solve();
-  salesmanSolver_->getTravelOrder();
+  //salesmanSolver_->setContourList(toolPaths);
+  //salesmanSolver_->solve();
+  //salesmanSolver_->getTravelOrder();
   
   // Publish pose array vs send via service
   
 }
 
-geometry_msgs::msg::Quaternion PicassoEyes::rpyToQuaternion(const double roll, const double pitch, const double yaw) {
+geometry_msgs::msg::Quaternion PicassoEyes::rpyToQuaternion(const double roll, 
+                                                            const double pitch, 
+                                                            const double yaw) {
   tf2::Quaternion q;
   q.setRPY(roll, pitch, yaw);
   geometry_msgs::msg::Quaternion q_msg;
@@ -151,7 +211,10 @@ geometry_msgs::msg::Quaternion PicassoEyes::rpyToQuaternion(const double roll, c
   return q_msg;
 }
 
-void PicassoEyes::addMarkerPoint(visualization_msgs::msg::MarkerArray &markerArray, const unsigned int id, const geometry_msgs::msg::Pose &pose, const geometry_msgs::msg::Vector3 &scale, const std_msgs::msg::ColorRGBA &colour) {
+void PicassoEyes::addMarkerPoint(visualization_msgs::msg::MarkerArray &markerArray, 
+                                const unsigned int id, const geometry_msgs::msg::Pose &pose, 
+                                const geometry_msgs::msg::Vector3 &scale, 
+                                const std_msgs::msg::ColorRGBA &colour) {
   visualization_msgs::msg::Marker marker;
   marker.header.frame_id = "camera_link";
   marker.header.stamp = this->get_clock()->now();
@@ -166,7 +229,11 @@ void PicassoEyes::addMarkerPoint(visualization_msgs::msg::MarkerArray &markerArr
   markerArray.markers.push_back(marker);
 }
 
-void PicassoEyes::addMarkerPath(visualization_msgs::msg::MarkerArray &markerArray, const unsigned int id, const std::vector<geometry_msgs::msg::Point> &points, const geometry_msgs::msg::Vector3 &scale, const std_msgs::msg::ColorRGBA &colour) {
+void PicassoEyes::addMarkerPath(visualization_msgs::msg::MarkerArray &markerArray, 
+                                const unsigned int id, 
+                                const std::vector<geometry_msgs::msg::Point> &points, 
+                                const geometry_msgs::msg::Vector3 &scale, 
+                                const std_msgs::msg::ColorRGBA &colour) {
   visualization_msgs::msg::Marker marker;
   marker.header.frame_id = "camera_link";
   marker.header.stamp = this->get_clock()->now();
@@ -174,10 +241,14 @@ void PicassoEyes::addMarkerPath(visualization_msgs::msg::MarkerArray &markerArra
   marker.id = id;
   marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
   marker.action = visualization_msgs::msg::Marker::ADD;
-
-  for (geometry_msgs::msg::Point point : points) {
-    marker.points.push_back(point);
-  }
+  marker.pose.position.x = 0.0;
+  marker.pose.position.y = 0.0;
+  marker.pose.position.z = 0.0;
+  marker.pose.orientation.x = 0.0;
+  marker.pose.orientation.y = 0.0;
+  marker.pose.orientation.z = 0.0;
+  marker.pose.orientation.w = 1.0;
+  marker.points = points;
   
   marker.scale = scale;
   marker.color = colour;

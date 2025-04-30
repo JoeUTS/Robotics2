@@ -13,9 +13,9 @@
 #include <QtWidgets/QWidget>
 #include <QtMultimedia/QtMultimedia>
 #include <QtMultimediaWidgets/QtMultimediaWidgets>
-#include <QCamera>
-#include <QCameraImageCapture>
-#include <QCameraViewfinder>
+//#include <QCamera> These are part of QtMultimedia
+//#include <QCameraImageCapture>
+//#include <QCameraViewfinder>
 #include <QVBoxLayout>
 #include <QObject>
 #include <rclcpp/rclcpp.hpp>

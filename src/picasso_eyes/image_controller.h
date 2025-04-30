@@ -9,6 +9,8 @@
 #include <thread>
 #include <fstream>
 #include <filesystem>
+#include <iostream>
+#include <fstream>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/logger.hpp"
@@ -33,20 +35,21 @@ struct DetectedObject {
   int class_id;
   float confidence;
   cv::Rect box;
+  cv::Mat mask;
 };
 
 class imageController {
 public:
   /// List of colours for drawing bounding boxes.
-  const std::map<int, cv::Scalar> COLOURS_LIST = {
-    {0, cv::Scalar(0, 0, 0)},
-    {1, cv::Scalar(0, 0, 255)},
-    {2, cv::Scalar(0, 255, 0)},
-    {3, cv::Scalar(255, 0, 0)},
-    {4, cv::Scalar(0, 255, 255)},
-    {5, cv::Scalar(255, 0, 255)},
-    {6, cv::Scalar(255, 255, 0)},
-    {7, cv::Scalar(255, 255, 255)}
+  const std::vector<cv::Scalar> COLOURS_LIST = {
+    {cv::Scalar(0, 0, 0)},
+    {cv::Scalar(0, 0, 255)},
+    {cv::Scalar(0, 255, 0)},
+    {cv::Scalar(255, 0, 0)},
+    {cv::Scalar(0, 255, 255)},
+    {cv::Scalar(255, 0, 255)},
+    {cv::Scalar(255, 255, 0)},
+    {cv::Scalar(255, 255, 255)}
   };
 
   /// @brief Constructor for imageController. 
@@ -122,12 +125,20 @@ public:
   /// @param image Input image. Must be single channel image.
   /// @param scale Value to scale image by.
   /// @return List of contour objects.
-  std::map<int, std::shared_ptr<Contour>> getToolpaths(const cv::Mat &image, const bool normalise = false);
+  std::map<int, std::shared_ptr<Contour>> getToolpaths(cv::Mat &image, const bool normalise = true, const bool center = true);
 
   /// @brief Calculate averate intensity of image. 
   /// @param image Input image.
   /// @return [0-255]. Average intensity.
   int calculateAverageIntensity(cv::Mat &image);
+
+  std::vector<DetectedObject> detect(cv::Mat &image);
+
+  std::vector<DetectedObject> detectSegment(cv::Mat &image);
+
+  std::vector<cv::Mat> detectPreProcess(cv::Mat &inputImage);
+
+  cv::Mat detectPostProcess(cv::Mat input_image, std::vector<cv::Mat> &outputs);
 
 private:
   // system objects.
@@ -146,7 +157,29 @@ private:
   // TO DO: test only
   void generateArt(void);
 
-  void loadImageClassList(std::string path);
+
+  // AI detection
+  const float INPUT_WIDTH = 640.0;
+  const float INPUT_HEIGHT = 640.0;
+  const float SCORE_THRESHOLD = 0.5;
+  const float NMS_THRESHOLD = 0.5;
+  const float CONFIDENCE_THRESHOLD = 0.5;
+  std::vector<std::string> classList_;
+  cv::dnn::Net net_;
+
+  const float FONT_SCALE = 0.7;
+  const int FONT_FACE = cv::FONT_HERSHEY_SIMPLEX;
+  const int THICKNESS = 1;
+
+  void load_class_list(std::string &path);
+
+  void load_net(std::string &path);
+
+  cv::Mat format_yolov5(const cv::Mat &source);
+
+  void draw_label(cv::Mat& input_image, std::string label, int left, int top);
+
+  
 };
 
 #endif // IMAGECONTROLLER_H

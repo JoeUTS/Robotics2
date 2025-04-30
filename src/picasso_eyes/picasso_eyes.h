@@ -83,6 +83,11 @@ private:
 
   void cameraReceiveCallback(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg);
 
+  /// @brief Compress image to specified quality.
+  /// @param imageMsg Image to compress.
+  /// @param quality Quality to compress to.
+  sensor_msgs::msg::Image compressImage(sensor_msgs::msg::Image &imageMsg, const int quality);
+
   /// @brief Generate toolpath from provided image.
   /// @param image image to generate toolpath from.
   /// @param blurPasses Number of blur passes to apply. \n

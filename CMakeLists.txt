@@ -52,13 +52,18 @@ find_package(ros_image_to_qimage REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 
 # Add include directories
-include_directories(${Qt5Widgets_INCLUDE_DIRS})
-include_directories(${Qt5Core_INCLUDE_DIRS})
-include_directories(${Qt5Multimedia_INCLUDE_DIRS})
-include_directories(${Qt5MultimediaWidgets_INCLUDE_DIRS})
-include_directories(${rclcpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
-include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(${geometry_msgs_INCLUDE_DIRS})
+# You should have these in your c_cpp_properties.json
+# qt5: "/usr/include/x86_64-linux-gnu/qt5/**" or "/usr/lib/qt5/include/**"
+#include_directories(${Qt5Widgets_INCLUDE_DIRS})
+#include_directories(${Qt5Core_INCLUDE_DIRS})
+#include_directories(${Qt5Multimedia_INCLUDE_DIRS})
+#include_directories(${Qt5MultimediaWidgets_INCLUDE_DIRS})
+# ROS: "/opt/ros/humble/include/**"
+#include_directories(${rclcpp_INCLUDE_DIRS} ${std_msgs_INCLUDE_DIRS})
+#include_directories(${geometry_msgs_INCLUDE_DIRS})
+# openCV: "/usr/include/opencv4/**" or "/usr/include/**",
+#include_directories(${OpenCV_INCLUDE_DIRS})
+
 include_directories(
   src/picasso_arm
   src/picasso_eyes
@@ -84,6 +89,7 @@ set(picasso_arm_dep
 set(picasso_arm_src
   src/picasso_arm/arm_main.cpp
   src/picasso_arm/picasso_arm.cpp
+  src/picasso_eyes/Contour.cpp
 )
 
 add_executable(picasso_arm ${picasso_arm_src})
@@ -109,6 +115,7 @@ set(picasso_eyes_dep
 set(picasso_eyes_src
   src/picasso_eyes/eyes_main.cpp
   src/picasso_eyes/picasso_eyes.cpp
+  src/picasso_eyes/Contour.cpp
   src/picasso_eyes/image_controller.cpp
   src/picasso_eyes/salesman_solver.cpp
 )
@@ -150,6 +157,7 @@ find_package(ament_cmake_gtest REQUIRED)
 ament_add_gtest(test_salesman_solver
   tests/test_salesman_solver.cpp
   src/picasso_eyes/salesman_solver.cpp
+  src/picasso_eyes/Contour.cpp
 )
 
 target_link_libraries(test_salesman_solver
@@ -184,6 +192,7 @@ install(TARGETS
 install(
   DIRECTORY
   config
+  local # test
   launch
   rviz
   worlds

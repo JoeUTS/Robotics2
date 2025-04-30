@@ -3,6 +3,9 @@
 .vscode/*
 */.vscode/*
 
+# local folder
+local/*
+
 # build files
 build/*
 */build*
