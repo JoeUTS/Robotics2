@@ -3,25 +3,102 @@
 PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
   // subscribers
   subCamera_ = this->create_subscription<realsense2_camera_msgs::msg::RGBD>(
-    "/camera/camera/rgbd", 3, std::bind(&PicassoEyes::cameraReceiveCallback,this,std::placeholders::_1));
+    "/camera/camera/rgbd", 3, std::bind(&PicassoEyes::callbackCameraReceive, 
+    this, std::placeholders::_1));
 
   // publishers
   pubVis_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/vis_toolpath", 3);
   pubCameraImage_ = this->create_publisher<sensor_msgs::msg::Image>("/processed_camera_image", 3);
-
+  
+  // timers
   timer_ = this->create_wall_timer(
     timer_duration_, std::bind(&PicassoEyes::tempFunction, this));
+
+  // services
+  servCameraToggleRepub_ = this->create_service<std_srvs::srv::Trigger>("/camera_feed_toggle", 
+                                          std::bind(&PicassoEyes::serviceToggleCameraFeed, 
+                                          this, std::placeholders::_1, std::placeholders::_2));
+
+  servCaptureImage_ = this->create_service<std_srvs::srv::Trigger>("/capture_image", 
+                                          std::bind(&PicassoEyes::serviceCaptureImage, 
+                                          this, std::placeholders::_1, std::placeholders::_2)); 
+
+  servPreviewSketch_ = this->create_service<std_srvs::srv::Trigger>("/preview_sketch", 
+                                          std::bind(&PicassoEyes::servicePreviewSketch, 
+                                          this, std::placeholders::_1, std::placeholders::_2)); 
+
+  servDrawSketch_ = this->create_service<std_srvs::srv::Trigger>("/draw_sketch", 
+                                          std::bind(&PicassoEyes::serviceDrawSketch, 
+                                          this, std::placeholders::_1, std::placeholders::_2));
+
+  servNextContour_ = this->create_service<std_srvs::srv::Trigger>("/next_contour", 
+                                          std::bind(&PicassoEyes::serviceNextContour, 
+                                          this, std::placeholders::_1, std::placeholders::_2));
+
+  serviceShutdown_ = this->create_service<std_srvs::srv::Trigger>("/picasso_eyes/shutdown_node", 
+                                          std::bind(&PicassoEyes::serviceShutdown, 
+                                          this, std::placeholders::_1, std::placeholders::_2));
 }
 
-void PicassoEyes::cameraReceiveCallback(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
+void PicassoEyes::callbackCameraReceive(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
   if (imageController_ == NULL) {
     imageController_ = std::make_shared<imageController>(incomingMsg, this->shared_from_this());
     
   } else {
     sensor_msgs::msg::Image cameraImage = imageController_->updateCameraImage(incomingMsg);
-    compressImage(cameraImage, 80);
-    pubCameraImage_->publish(cameraImage);
+
+    if (cameraFeedEnabled_) {
+      compressImage(cameraImage, 80);
+      pubCameraImage_->publish(cameraImage);
+    }
   }
+}
+
+void PicassoEyes::serviceToggleCameraFeed(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                                          std_srvs::srv::Trigger::Response::SharedPtr response) {
+  cameraFeedEnabled_ = !cameraFeedEnabled_;
+  response->success = true;
+  std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
+  RCLCPP_INFO(this->get_logger(), "Camera feed turned %s", state.c_str());
+}
+
+void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                                      std_srvs::srv::Trigger::Response::SharedPtr response) {
+  // TO DO: Make function for same
+  response->success = true;
+  std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
+  RCLCPP_INFO(this->get_logger(), "Camera feed turned %s", state.c_str());
+}
+
+void PicassoEyes::servicePreviewSketch(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                                        std_srvs::srv::Trigger::Response::SharedPtr response) {
+  // TO DO: Make function for same
+  response->success = true;
+  std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
+  RCLCPP_INFO(this->get_logger(), "Camera feed turned %s", state.c_str());
+}
+
+void PicassoEyes::serviceDrawSketch(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                                    std_srvs::srv::Trigger::Response::SharedPtr response) {
+  // TO DO: Make function for same
+  response->success = true;
+  std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
+  RCLCPP_INFO(this->get_logger(), "Camera feed turned %s", state.c_str());
+}
+
+void PicassoEyes::serviceNextContour(const std_srvs::srv::Trigger::Request::SharedPtr request,
+  std_srvs::srv::Trigger::Response::SharedPtr response) {
+  // TO DO: Make function for same
+  response->success = true;
+  std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
+  RCLCPP_INFO(this->get_logger(), "Camera feed turned %s", state.c_str());
+}
+
+void PicassoEyes::serviceShutdown(const std_srvs::srv::Trigger::Request::SharedPtr request,
+  std_srvs::srv::Trigger::Response::SharedPtr response) {
+  response->success = true;
+  RCLCPP_INFO(this->get_logger(), "%s shutting down.", this->get_name());
+  rclcpp::shutdown(); 
 }
 
 sensor_msgs::msg::Image PicassoEyes::compressImage(sensor_msgs::msg::Image &imageMsg, const int quality) {
@@ -121,8 +198,9 @@ void PicassoEyes::tempFunction(void) {
   // Localise people.
   // TO DO
   // Spin off new thread for this?
-  cv::Mat detectionImage = imageRGB.clone();
+  //cv::Mat detectionImage = imageRGB.clone();
   //std::vector<DetectedObject> detectedObjects = imageController_->detect(detectionImage);
+  /*
   std::vector<DetectedObject> detections = imageController_->detectSegment(detectionImage);
   for (const auto& obj : detections) {
     // You can now use obj.mask (a binary cv::Mat) for further processing
@@ -132,10 +210,11 @@ void PicassoEyes::tempFunction(void) {
     object_region.copyTo(masked_object, obj.mask); // Apply the binary mask
     cv::imshow("Masked Object", masked_object);
   }
+  */
   //std::vector<cv::Mat> detections = imageController_->detectPreProcess(detectionImage);
   //cv::Mat img = imageController_->detectPostProcess(detectionImage, detections);
-  cv::imshow("image", detectionImage);
-  cv::waitKey(1);
+  //cv::imshow("image", detectionImage);
+  //cv::waitKey(1);
 
   // - Return an array of detected people with location, size, bounding box ect.
   std::list<geometry_msgs::msg::Vector3> personImageLocations;

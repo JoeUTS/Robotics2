@@ -9,11 +9,13 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/logger.hpp>
 #include <std_msgs/msg/header.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/transform.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <std_srvs/srv/trigger.hpp>
 #include <tf2/LinearMath/Quaternion.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <realsense2_camera_msgs/msg/rgbd.hpp>
@@ -65,12 +67,22 @@ public:
   PicassoEyes(void);
   cv::Mat getSketchPreview();
 private:
-  bool generationRunning_ = false;
+  bool cameraFeedEnabled_ = false;
   std::thread imageProcessThread_;
 
+  // Topics
   rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr subCamera_;  // Camera RGB image subscriber.
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubVis_;     // Visualization markers publisher.
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pubCameraImage_;          // Camera image publisher.
+  
+  // Services
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servCameraToggleRepub_;      // Toggle republishing camera feed to UI.
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;           // Capture image for sketch.
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servPreviewSketch_;          // Generate sketch preview from captured image.
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servDrawSketch_;             // Start drawing sequence. Setting to false will cease drawing.
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servNextContour_;            // Change published contour. Will publish empty poseArray when complete.
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr serviceShutdown_;            // Shutdown node.
+
   rclcpp::TimerBase::SharedPtr timer_;
   std::chrono::milliseconds timer_duration_{1000};
   
@@ -78,8 +90,28 @@ private:
   std::shared_ptr<SalesmanSolver> salesmanSolver_ = NULL;
 
   geometry_msgs::msg::PoseArray outputPoseArray_; // Holds copy of last generated pose array msg.
+  
+  /// @brief Updates ImageController with new camera image. If ImageController object not made, creates.
+  /// @param incomingMsg sensor_msgs::msg::Image
+  void callbackCameraReceive(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg);
 
-  void cameraReceiveCallback(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg);
+  /// @brief Service callback for toggling camera feed.
+  void serviceToggleCameraFeed(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+
+  /// @brief Service callback for capturing image for sketch.
+  void serviceCaptureImage(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+
+  /// @brief Service callback for previewing sketch from captured image.
+  void servicePreviewSketch(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+
+  /// @brief Service callback for drawing sketch.
+  void serviceDrawSketch(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+
+  /// @brief Service callback for changing the published contour. - SHOULD THIS BE A CUSTOM SERVICE TO RESPOND WITH A POSEARRAY?
+  void serviceNextContour(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+
+  /// @brief Service callback for shutting down node.
+  void serviceShutdown(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /// @brief Compress image to specified quality.
   /// @param imageMsg Image to compress.

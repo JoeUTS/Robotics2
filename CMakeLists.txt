@@ -24,6 +24,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -36,6 +37,7 @@ find_package(moveit_ros_planning_interface REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Widgets Core Multimedia MultimediaWidgets)
 find_package(ros_image_to_qimage REQUIRED)
 find_package(rcl_interfaces REQUIRED)
+
 
 # Add include directories
 # qt5: "/usr/include/x86_64-linux-gnu/qt5/**"
@@ -78,6 +80,7 @@ set(picasso_eyes_dep
   sensor_msgs
   geometry_msgs
   visualization_msgs
+  std_srvs
   OpenCV
   cv_bridge
   image_transport
@@ -104,6 +107,7 @@ set(picasso_ui_dep
   ament_index_cpp 
   rclcpp
   std_msgs
+  std_srvs
   Qt5
   ros_image_to_qimage
   OpenCV

@@ -3,7 +3,7 @@
 
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow)
+    : QMainWindow(parent), Node("picaso_ui"), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
@@ -15,26 +15,12 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     // Create a node and publishers
-    node = rclcpp::Node::make_shared("image_publisher_node");
-    image_publisher = node->create_publisher<sensor_msgs::msg::Image>("/processed_camera_image", 10);
-    image_subscriber = node->create_subscription<sensor_msgs::msg::Image>(
+    image_subscriber = this->create_subscription<sensor_msgs::msg::Image>(
         "/processed_camera_image", 10,
         std::bind(&MainWindow::imageCallback, this, std::placeholders::_1));
 
-    // Generate a blue image and start publishing it (Placeholder code for camera)
-    cv::Mat image(480, 640, CV_8UC3, cv::Scalar(255, 0, 0)); // Blue image
-    auto image_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", image).toImageMsg();
-    auto loop_rate = std::make_shared<rclcpp::Rate>(30); // 30 Hz
-    std::thread([this, image_msg, loop_rate]() mutable {
-        while (rclcpp::ok()) {
-            image_publisher->publish(*image_msg);
-            rclcpp::spin_some(node);
-            loop_rate->sleep();
-        }
-    }).detach();
-
-    // Initialize the PicassoEyes node
-    //picassoEyesNode = new PicassoEyes();
+    servCamerafeed_ = this->create_client<std_srvs::srv::Trigger>("/camera_feed_toggle");
+    servEyesShutdown_ = this->create_client<std_srvs::srv::Trigger>("/picasso_eyes/shutdown_node");
 
     // Connect button
     connect(ui->startCamera, &QPushButton::clicked, this, &MainWindow::startCamera);
@@ -45,12 +31,14 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 MainWindow::~MainWindow() {
-    //delete picassoEyesNode;
-    rclcpp::shutdown();
-    delete ui;
+    shutdownEyes();
+    rclcpp::shutdown(); // Make sure this is the last command in the destructor - Joseph
 }
 
 void MainWindow::startCamera() {
+    // Now that I have made a combined launch file, this probs isnt needed sorry.
+    // We now have a camera toggle function at the bottom which can toggle the camera publishing.
+    //- Joseph
 
     // Start the picasso_eyes launch file
     QString command = "ros2 launch picasso_eyes realsense.launch.py";
@@ -60,7 +48,7 @@ void MainWindow::startCamera() {
     process->start(program, arguments);
 
     // Ensure the ROS 2 subscription is active
-    RCLCPP_INFO(node->get_logger(), "Starting camera and initializing ROS image view...");
+    RCLCPP_INFO(this->get_logger(), "Starting camera and initializing ROS image view...");
 
     // Find or create the QLabel in the existing layout
     QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
@@ -81,7 +69,7 @@ void MainWindow::startCamera() {
     }
 
     // Display a message indicating the camera has started
-    RCLCPP_INFO(node->get_logger(), "Camera started. Waiting for images...");
+    RCLCPP_INFO(this->get_logger(), "Camera started. Waiting for images...");
 }
 
 void MainWindow::connectUR3() {
@@ -146,31 +134,89 @@ void MainWindow::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
             imageLabel->setPixmap(QPixmap::fromImage(qImage));
         });
     } catch (const cv_bridge::Exception &e) {
-        RCLCPP_ERROR(node->get_logger(), "cv_bridge exception: %s", e.what());
+        RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
     }
 }
 
 void MainWindow::previewSketch() {
+    /*
     // Ensure the PicassoEyes node is initialized
-    //if (!picassoEyesNode) {
-        //RCLCPP_ERROR(node->get_logger(), "PicassoEyes node is not initialized.");
-        //return;
-    //}
+    if (!picassoEyesNode) {
+        RCLCPP_ERROR(node->get_logger(), "PicassoEyes node is not initialized.");
+        return;
+    }
 
     // Use a public function in PicassoEyes to retrieve the processed image
-    //cv::Mat sketch = picassoEyesNode->getSketchPreview();  // Hypothetical public function in PicassoEyes
+    cv::Mat sketch = picassoEyesNode->getSketchPreview();  // Hypothetical public function in PicassoEyes
 
-    //if (sketch.empty()) {
-        //RCLCPP_ERROR(node->get_logger(), "No sketch preview available.");
-        //return;
-    //}
+    if (sketch.empty()) {
+        RCLCPP_ERROR(node->get_logger(), "No sketch preview available.");
+        return;
+    }
 
     // Convert the sketch to QImage and display it in the QLabel
-    //QImage qSketch(sketch.data, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);
-    //QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
-    //if (imageLabel) {
-        //imageLabel->setPixmap(QPixmap::fromImage(qSketch));
-    //} else {
-        //RCLCPP_ERROR(node->get_logger(), "Image label not found.");
-    //}
+    QImage qSketch(sketch.data, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);
+    QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
+    if (imageLabel) {
+        imageLabel->setPixmap(QPixmap::fromImage(qSketch));
+    } else {
+        RCLCPP_ERROR(node->get_logger(), "Image label not found.");
+    }
+    */
+}
+
+bool MainWindow::toggleCameraFeed(void) {
+    auto messagePeriod = std::chrono::seconds(1);
+    std::chrono::time_point<std::chrono::system_clock> lastMsg;
+    
+    // Wait for service
+    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(250))) {
+        // Prevent spaming messages
+        std::chrono::duration<double> timeSinceLastMsg = std::chrono::system_clock::now() - lastMsg;
+        if (timeSinceLastMsg >= messagePeriod) {
+            lastMsg = std::chrono::system_clock::now();
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'camera_feed_toggle' to connect");
+        }
+    }
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+    auto result = servCamerafeed_->async_send_request(request);
+    bool success = false;
+
+    // Await responce
+    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
+        if (result.get()->success) {
+        RCLCPP_INFO_STREAM(this->get_logger(), "Camera toggled.");
+          success = true;
+
+        } else {
+        RCLCPP_WARN_STREAM(this->get_logger(), "Camera toggle failed.");
+        }
+
+      } else {
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'camera_feed_toggle'");
+    }
+
+    return success;
+}
+
+void MainWindow::shutdownEyes(void) {
+    auto messagePeriod = std::chrono::seconds(1);
+    std::chrono::time_point<std::chrono::system_clock> lastMsg;
+    
+    // Wait for service
+    while (!servEyesShutdown_ ->wait_for_service(std::chrono::milliseconds(250))) {
+        // Prevent spaming messages
+        std::chrono::duration<double> timeSinceLastMsg = std::chrono::system_clock::now() - lastMsg;
+        if (timeSinceLastMsg >= messagePeriod) {
+            lastMsg = std::chrono::system_clock::now();
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'picasso_eyes/shutdown_node' to connect");
+        }
+    }
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+    auto result = servCamerafeed_->async_send_request(request);
+    bool success = result.get()->success;
 }

@@ -18,18 +18,16 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <std_srvs/srv/trigger.hpp>
 #include <ros_image_to_qimage/ros_image_to_qimage.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
-
-//#include "../picasso_eyes/picasso_eyes.h"
-//#include "../picasso_eyes/image_controller.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow
+class MainWindow : public QMainWindow, public rclcpp::Node  // In ROS node should be inherrited.
 {
     Q_OBJECT
 
@@ -54,16 +52,20 @@ private:
     QCameraImageCapture *imageCapture;
 
     // ROS 2
-    rclcpp::Node::SharedPtr node;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr estop_publisher;
-    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscriber;
+
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCamerafeed_;  // Added service to toggle camera feed - Joseph
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEyesShutdown_; // Added service to shutdown picasso eyes - Joseph.
+    
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
-    //auto node = rclcpp::Node::make_shared("image_publisher_node");
-   // auto publisher = node->create_publisher<sensor_msgs::msg::Image>("image_topic", 10);
-   
-   // THIS IS A ROS NODE WE DO NOT JOIN THEM LIKE THIS!!
-    //PicassoEyes *picassoEyesNode;
-    //std::shared_ptr<imageController> imageController_;
+
+    void MainWindow::previewSketch();
+
+    // Run this function to set the camera feed to given state - Joseph
+    bool toggleCameraFeed(void);
+
+    // Run this function to shutdown eyes - Joseph
+    void shutdownEyes(void);
 };
 #endif // MAINWINDOW_H
