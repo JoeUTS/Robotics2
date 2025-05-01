@@ -24,6 +24,8 @@
 #include "image_controller.h"
 #include "Contour.h"
 #include "salesman_solver.h"
+#include "VisulisationSettings.h"
+#include "picasso_bot/srv/get_pose_array.hpp"
 
 /*
 Camera is realsense D435i
@@ -67,6 +69,9 @@ public:
   PicassoEyes(void);
   cv::Mat getSketchPreview();
 private:
+  // settings
+  int pubCompressQuality_ = 80;
+
   // Topics
   rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr subCamera_;  // Camera RGB image subscriber.
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubVis_;     // Visualization markers publisher.
@@ -77,24 +82,32 @@ private:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;           // Capture image for sketch.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servPreviewSketch_;          // Generate sketch preview from captured image.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;           // Discard captured image/sketch.
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servDrawSketch_;             // Start drawing sequence. Setting to false will cease drawing.
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servNextContour_;            // Change published contour. Will publish empty poseArray when complete.
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_;       // Generate draw order.
+  rclcpp::Service<picasso_bot::srv::GetPoseArray>::SharedPtr servNextContour_; // Send next contour to draw.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr serviceShutdown_;            // Shutdown node.
-
-  rclcpp::TimerBase::SharedPtr timer_;
-  std::chrono::milliseconds timer_duration_{1000};
   
+  // Class objects
   std::shared_ptr<imageController> imageController_ = NULL;
   std::shared_ptr<SalesmanSolver> salesmanSolver_ = NULL;
 
+  // --- Runtime variables ---
+  // Image capture
   bool cameraFeedEnabled_ = false;
   bool imageCaptured_ = false;
-  int pubCompressQuality_ = 80;
   sensor_msgs::msg::Image capturedImageMsg_;      // Holds copy of last captured image msg.
   cv::Mat capturedImage_;                         // Holds copy of last captured image.
+
+  // Mask generation
+  std::unique_ptr<std::thread> maskThread_ = NULL;
+  bool maskGenerationActive_ = false; // True when generation function is active.
+  bool maskReady_ = false;            // True when mask is ready.
+  cv::Mat mask_;                      // Generated mask.
+
+  // Toolpath generation
   std::map<int, std::shared_ptr<Contour>> toolPaths_;
-  std::thread imageProcessThread_;
   std::vector<std::pair<int, bool>> contourOrder_;
+
+
 
   geometry_msgs::msg::PoseArray outputPoseArray_; // Holds copy of last generated pose array msg.
   
@@ -116,10 +129,10 @@ private:
   void serviceDiscardImage(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /// @brief Service callback for drawing sketch.
-  void serviceDrawSketch(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+  void serviceGenerateToolpath(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /// @brief Service callback for changing the published contour. - SHOULD THIS BE A CUSTOM SERVICE TO RESPOND WITH A POSEARRAY?
-  void serviceNextContour(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+  void serviceNextContour(const picasso_bot::srv::GetPoseArray::Request::SharedPtr request, picasso_bot::srv::GetPoseArray::Response::SharedPtr response);
 
   /// @brief Service callback for shutting down node.
   void serviceShutdown(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
@@ -129,8 +142,6 @@ private:
   /// @param quality Quality to compress to.
   sensor_msgs::msg::Image compressImage(sensor_msgs::msg::Image &imageMsg, const int quality);
 
-  cv::Mat captureImage(void);
-
   /// @brief Generate toolpath from provided image.
   /// @param image image to generate toolpath from. \n
   /// @param blurPasses Number of blur passes to apply. \n
@@ -139,11 +150,12 @@ private:
   /// @param blurKernalSize size of blur kernal.
   /// @param colourSteps Number of colours to reduce to.
   /// @return Vector of contours.
-  std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat image, const bool visualise = false);
+  std::map<int, std::shared_ptr<Contour>> generateToolpath(cv::Mat &image, const bool visualise = false);
 
   /// @brief Generate sketch from input image.
-  cv::Mat generateSketch(cv::Mat image, const int blurPasses = 1, const int blurKernalSize = 3, const int colourSteps = 3, const bool showEdges = false);
+  cv::Mat generateSketch(cv::Mat &image, const int blurPasses = 1, const int blurKernalSize = 3, const int colourSteps = 3, const bool showEdges = false);
 
+  
 
   /// @brief Temporary function for testing.
   void tempFunction(void);
@@ -155,6 +167,9 @@ private:
   void addMarkerPath(visualization_msgs::msg::MarkerArray &markerArray, const unsigned int id, const std::vector<geometry_msgs::msg::Point> &points, const geometry_msgs::msg::Vector3 &scale, const std_msgs::msg::ColorRGBA &colour);
 
   std::vector<cv::Point> convertToCvPoints(const std::vector<geometry_msgs::msg::Point> &rosPoints);
+
+  /// @brief Starts mask generation in a separate thread. Only on instance can run at a time.
+  void generateMask(cv::Mat &image);
 };
 
 #endif // PICASSOEYES_H

@@ -19,6 +19,7 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rsutil.h>
@@ -140,6 +141,9 @@ public:
 
   cv::Mat detectPostProcess(cv::Mat input_image, std::vector<cv::Mat> &outputs);
 
+  /// @brief Generate image mask using YOLOv5 to keep only humans in image.
+  cv::Mat generateMask(cv::Mat &image);
+
 private:
   // system objects.
   std::mutex mutex_;  // Stored image mutex.
@@ -147,16 +151,12 @@ private:
   
   cv::Mat storedImage_; // Stored camera image.
   int colourIndex_ = 0; // Index of next colour in colour list.
-  
-  // Threadding stuff.
-  bool detectionRunning_ = false; // True when detection loop is active.
 
   // Messages.
   realsense2_camera_msgs::msg::RGBD lastCameraMsg_;  // Holds copy of last received image msg.
 
   // TO DO: test only
   void generateArt(void);
-
 
   // AI detection
   const float INPUT_WIDTH = 640.0;

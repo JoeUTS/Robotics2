@@ -18,6 +18,7 @@ set(CMAKE_AUTORCC ON)
 
 # Dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_ros REQUIRED) # Custom service
 find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -37,6 +38,7 @@ find_package(moveit_ros_planning_interface REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Widgets Core Multimedia MultimediaWidgets)
 find_package(ros_image_to_qimage REQUIRED)
 find_package(rcl_interfaces REQUIRED)
+find_package(rosidl_default_generators REQUIRED) # Custom service
 
 
 # Add include directories
@@ -49,6 +51,14 @@ include_directories(
   src/picasso_eyes
   src/picasso_ui
 )
+
+# Custom services
+rosidl_generate_interfaces(${PROJECT_NAME}
+  srv/GetPoseArray.srv
+  DEPENDENCIES builtin_interfaces geometry_msgs
+)
+
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # Arm
 set(picasso_arm_dep
@@ -74,7 +84,7 @@ add_executable(picasso_arm ${picasso_arm_src})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
 
 # Eyes
-set(picasso_eyes_dep 
+set(picasso_eyes_dep
   ament_index_cpp
   rclcpp
   sensor_msgs
@@ -100,7 +110,8 @@ set(picasso_eyes_src
 )
 
 add_executable(picasso_eyes ${picasso_eyes_src})
-ament_target_dependencies(picasso_eyes ${picasso_eyes_dep} geometry_msgs)
+ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
+target_link_libraries(picasso_eyes "${cpp_typesupport_target}")
 
 # UI
 set(picasso_ui_dep

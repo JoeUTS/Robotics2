@@ -207,7 +207,7 @@ void imageController::generateArt(void) {
 
   // Return on empty msg.
   if (imageRGB.empty()) {
-    detectionRunning_ = false;
+    //detectionRunning_ = false;
     return;
   }
   
@@ -227,7 +227,7 @@ void imageController::generateArt(void) {
   cv::findContours(edges, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
   cv::drawContours(imageRGB, contours, -1, cv::Scalar(0, 0, 255));
   
-  detectionRunning_ = false;
+  //detectionRunning_ = false;
 }
 
 
@@ -680,4 +680,29 @@ cv::Mat imageController::detectPostProcess(cv::Mat input_image, std::vector<cv::
   }
 
   return input_image;
+}
+
+cv::Mat imageController::generateMask(cv::Mat &image) {
+  std::vector<DetectedObject> detectedObjects = detect(image);
+  /*
+  std::vector<DetectedObject> detections = imageController_->detectSegment(detectionImage);
+  for (const auto& obj : detections) {
+    // You can now use obj.mask (a binary cv::Mat) for further processing
+    // For example, to apply the mask to the original image region:
+    cv::Mat object_region = detectionImage(obj.box);
+    cv::Mat masked_object;
+    object_region.copyTo(masked_object, obj.mask); // Apply the binary mask
+    cv::imshow("Masked Object", masked_object);
+  }
+  */
+  //std::vector<cv::Mat> detections = imageController_->detectPreProcess(detectionImage);
+  //cv::Mat img = imageController_->detectPostProcess(detectionImage, detections);
+  //cv::imshow("image", detectionImage);
+  //cv::waitKey(1);
+
+  // - Return an array of detected people with location, size, bounding box ect.
+  std::list<geometry_msgs::msg::Vector3> personImageLocations;
+
+
+  
 }

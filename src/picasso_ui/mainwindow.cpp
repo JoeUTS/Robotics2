@@ -166,13 +166,15 @@ void MainWindow::previewSketch() {
 }
 
 bool MainWindow::toggleCameraFeed(void) {
-    auto messagePeriod = std::chrono::seconds(1);
+    auto messagePeriod = std::chrono::milliseconds(1000);
     std::chrono::time_point<std::chrono::system_clock> lastMsg;
     
     // Wait for service
-    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(250))) {
+    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(200))) {
         // Prevent spaming messages
-        std::chrono::duration<double> timeSinceLastMsg = std::chrono::system_clock::now() - lastMsg;
+        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
+        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        
         if (timeSinceLastMsg >= messagePeriod) {
             lastMsg = std::chrono::system_clock::now();
             RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'camera_feed_toggle' to connect");
@@ -202,13 +204,15 @@ bool MainWindow::toggleCameraFeed(void) {
 }
 
 void MainWindow::shutdownEyes(void) {
-    auto messagePeriod = std::chrono::seconds(1);
+    auto messagePeriod = std::chrono::milliseconds(1000);
     std::chrono::time_point<std::chrono::system_clock> lastMsg;
     
     // Wait for service
-    while (!servEyesShutdown_ ->wait_for_service(std::chrono::milliseconds(250))) {
+    while (!servEyesShutdown_ ->wait_for_service(std::chrono::milliseconds(200))) {
         // Prevent spaming messages
-        std::chrono::duration<double> timeSinceLastMsg = std::chrono::system_clock::now() - lastMsg;
+        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
+        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        
         if (timeSinceLastMsg >= messagePeriod) {
             lastMsg = std::chrono::system_clock::now();
             RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'picasso_eyes/shutdown_node' to connect");

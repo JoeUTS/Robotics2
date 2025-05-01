@@ -60,8 +60,6 @@ private:
     
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
-    void MainWindow::previewSketch();
-
     // Run this function to set the camera feed to given state - Joseph
     bool toggleCameraFeed(void);
 
