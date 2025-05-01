@@ -67,18 +67,16 @@ public:
   PicassoEyes(void);
   cv::Mat getSketchPreview();
 private:
-  bool cameraFeedEnabled_ = false;
-  std::thread imageProcessThread_;
-
   // Topics
   rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr subCamera_;  // Camera RGB image subscriber.
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubVis_;     // Visualization markers publisher.
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pubCameraImage_;          // Camera image publisher.
-  
+
   // Services
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servCameraToggleRepub_;      // Toggle republishing camera feed to UI.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;           // Capture image for sketch.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servPreviewSketch_;          // Generate sketch preview from captured image.
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;           // Discard captured image/sketch.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servDrawSketch_;             // Start drawing sequence. Setting to false will cease drawing.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servNextContour_;            // Change published contour. Will publish empty poseArray when complete.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr serviceShutdown_;            // Shutdown node.
@@ -89,7 +87,17 @@ private:
   std::shared_ptr<imageController> imageController_ = NULL;
   std::shared_ptr<SalesmanSolver> salesmanSolver_ = NULL;
 
+  bool cameraFeedEnabled_ = false;
+  bool imageCaptured_ = false;
+  int pubCompressQuality_ = 80;
+  sensor_msgs::msg::Image capturedImageMsg_;      // Holds copy of last captured image msg.
+  cv::Mat capturedImage_;                         // Holds copy of last captured image.
+  std::map<int, std::shared_ptr<Contour>> toolPaths_;
+  std::thread imageProcessThread_;
+  std::vector<std::pair<int, bool>> contourOrder_;
+
   geometry_msgs::msg::PoseArray outputPoseArray_; // Holds copy of last generated pose array msg.
+  
   
   /// @brief Updates ImageController with new camera image. If ImageController object not made, creates.
   /// @param incomingMsg sensor_msgs::msg::Image
@@ -103,6 +111,9 @@ private:
 
   /// @brief Service callback for previewing sketch from captured image.
   void servicePreviewSketch(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+
+  /// @brief Service callback for discarding captured image.
+  void serviceDiscardImage(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /// @brief Service callback for drawing sketch.
   void serviceDrawSketch(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
@@ -118,15 +129,21 @@ private:
   /// @param quality Quality to compress to.
   sensor_msgs::msg::Image compressImage(sensor_msgs::msg::Image &imageMsg, const int quality);
 
+  cv::Mat captureImage(void);
+
   /// @brief Generate toolpath from provided image.
-  /// @param image image to generate toolpath from.
+  /// @param image image to generate toolpath from. \n
   /// @param blurPasses Number of blur passes to apply. \n
   ///                   Note: This is applied prior to colour quantisation. \n
   ///                   Note: Applies both a gaussian and median blur per pass.
   /// @param blurKernalSize size of blur kernal.
   /// @param colourSteps Number of colours to reduce to.
   /// @return Vector of contours.
-  std::map<int, std::shared_ptr<Contour>> generateToolpath(cv::Mat &image, const bool normalise, const int blurPasses, const int blurKernalSize, const int colourSteps);
+  std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat image, const bool visualise = false);
+
+  /// @brief Generate sketch from input image.
+  cv::Mat generateSketch(cv::Mat image, const int blurPasses = 1, const int blurKernalSize = 3, const int colourSteps = 3, const bool showEdges = false);
+
 
   /// @brief Temporary function for testing.
   void tempFunction(void);
