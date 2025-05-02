@@ -1,5 +1,14 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 project(picasso_bot)
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.11")
+  # CMP0071: Let AUTOMOC and AUTOUIC process GENERATED files.
+  cmake_policy(SET CMP0071 NEW)
+endif()
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.13")
+  # CMP0167: The FindBoost module is removed.
+  cmake_policy(SET CMP0167 NEW)
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -8,8 +17,8 @@ endif()
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Required for QT
 set(CMAKE_AUTOUIC ON)
@@ -40,17 +49,11 @@ find_package(ros_image_to_qimage REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED) # Custom service
 
-
 # Add include directories
 # qt5: "/usr/include/x86_64-linux-gnu/qt5/**"
 # ROS: "/opt/ros/humble/include/**"
 # openCV: "/usr/include/opencv4/**"
-
-include_directories(
-  src/picasso_arm
-  src/picasso_eyes
-  src/picasso_ui
-)
+# ROS2_ws package: "/home/<username>/ros2_ws/install/**"
 
 # Custom services
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -82,6 +85,10 @@ set(picasso_arm_src
 
 add_executable(picasso_arm ${picasso_arm_src})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
+target_include_directories(picasso_arm PRIVATE
+                          ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_arm
+                          ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
+)
 
 # Eyes
 set(picasso_eyes_dep
@@ -107,11 +114,15 @@ set(picasso_eyes_src
   src/picasso_eyes/Contour.cpp
   src/picasso_eyes/image_controller.cpp
   src/picasso_eyes/salesman_solver.cpp
+  src/picasso_eyes/VisulisationSettings.cpp
 )
 
 add_executable(picasso_eyes ${picasso_eyes_src})
 ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
 target_link_libraries(picasso_eyes "${cpp_typesupport_target}")
+target_include_directories(picasso_eyes PRIVATE
+                          ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
+)
 
 # UI
 set(picasso_ui_dep
@@ -149,20 +160,17 @@ target_link_libraries(picasso_ui
   Qt5::Multimedia
   Qt5::MultimediaWidgets
 )
+target_include_directories(picasso_ui PRIVATE
+                          ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_ui
+)
 
 # UTesting
 find_package(ament_cmake_gtest REQUIRED)
-
 ament_add_gtest(test_salesman_solver
   tests/test_salesman_solver.cpp
   src/picasso_eyes/salesman_solver.cpp
   src/picasso_eyes/Contour.cpp
 )
-
-target_link_libraries(test_salesman_solver
-  gtest_main
-)
-
 ament_target_dependencies(test_salesman_solver
   rclcpp
   std_msgs
@@ -178,8 +186,14 @@ ament_target_dependencies(test_salesman_solver
   realsense2
   realsense2_camera_msgs
 )
-
-
+target_link_libraries(test_salesman_solver
+  gtest_main
+  "${cpp_typesupport_target}"
+)
+target_include_directories(test_salesman_solver PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
+)
 
 install(TARGETS
   picasso_arm
@@ -195,15 +209,12 @@ install(
   launch
   rviz
   worlds
-  tests
+  srv
   DESTINATION share/${PROJECT_NAME}
 )
 
-
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  set(ament_cmake_copyright_FOUND TRUE)
-  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 

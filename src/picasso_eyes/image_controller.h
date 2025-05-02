@@ -142,7 +142,7 @@ public:
   cv::Mat detectPostProcess(cv::Mat input_image, std::vector<cv::Mat> &outputs);
 
   /// @brief Generate image mask using YOLOv5 to keep only humans in image.
-  cv::Mat generateMask(cv::Mat &image);
+  cv::Mat generateMask(cv::Mat image);
 
 private:
   // system objects.

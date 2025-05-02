@@ -23,7 +23,7 @@ def generate_launch_description():
   declare_launchRVIZ = DeclareLaunchArgument(
     'launch_rviz',
     default_value='true',
-    description='Whether launch RVIz'
+    description='Whether launch RVIZ'
   )
   
   # Launch configurations
@@ -43,24 +43,35 @@ def generate_launch_description():
     output="screen"
   )
 
+  # Allow rviz if not using mock hardware.
+  if (launchRVIZ == 'true') and (urMockHardware == 'false'):
+    ur_sim_rviz = 'true'
+
+  else:
+    ur_sim_rviz = 'false'
+
   ur_sim_gz = IncludeLaunchDescription(
     PythonLaunchDescriptionSource([
-      os.path.join(get_package_share_directory('ur_simulation_gz'), 'launch'),
-      '/ur_sim_control.launch.py'
+      os.path.join(get_package_share_directory("ur_simulation_gazebo"), "launch"),
+      "/ur_sim_control.launch.py"
     ]),
+
     launch_arguments={
-      'ur_type': urType,
-      "launch_rviz": "false",
-      "initial_joint_controller": urController
+      "ur_type": urType,
+      "initial_joint_controller": urController,
+      "launch_rviz": ur_sim_rviz, 
     }.items(),
+
     condition=IfCondition(urMockHardware)
-  )
+    )
+    
 
   ur_driver = IncludeLaunchDescription(
     PythonLaunchDescriptionSource([
       os.path.join(get_package_share_directory('ur_robot_driver'), 'launch'),
       '/ur_control.launch.py'
     ]),
+
     launch_arguments={
       'ur_type': urType,
       'robot_ip': urIP,
@@ -72,13 +83,15 @@ def generate_launch_description():
 
   move_it = IncludeLaunchDescription(
     PythonLaunchDescriptionSource([
-      os.path.join(get_package_share_directory('ur_moveit_config'), 'launch'),
-      '/ur_moveit.launch.py'
+      os.path.join(get_package_share_directory("ur_moveit_config"), "/launch"), 
+      "/ur_moveit.launch.py"
     ]),
+    
     launch_arguments={
-      'ur_type': urType,
-      'launch_rviz': launchRVIZ,
-      'use_fake_hardware': urMockHardware
+        "ur_type": urType,
+        "use_sim_time": urMockHardware,
+        "launch_rviz": launchRVIZ,
+        "use_fake_hardware": urMockHardware,
     }.items()
   )
 

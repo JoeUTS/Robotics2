@@ -5,32 +5,15 @@
 #include <geometry_msgs/msg/vector3.hpp>
 
 namespace Colours {
-  std_msgs::msg::ColorRGBA green;
-  green.r = 0;
-  green.g = 1;
-  green.b = 0;
-  green.a = 1;
-
-  std_msgs::msg::ColorRGBA red;
-  red.r = 1;
-  red.g = 0;
-  red.b = 0;
-  red.a = 1;
-
-  std_msgs::msg::ColorRGBA white;
-  white.r = 1;
-  white.g = 1;
-  white.b = 1;
-  white.a = 1;
+  extern const std_msgs::msg::ColorRGBA green;
+  extern const std_msgs::msg::ColorRGBA red;
+  extern const std_msgs::msg::ColorRGBA white;
 }
 
 namespace Scales {
-  // TO DO: Finish
-  geometry_msgs::msg::Vector3 scaleHead(1e-3, 1e-3, 2e-2);
-  geometry_msgs::msg::Vector3 scaleTail(2e-3, 2e-3, 1e-2);
-  geometry_msgs::msg::Vector3 scaleLine(1e-3, 0, 0);
+  extern const geometry_msgs::msg::Vector3 scaleHead;
+  extern const geometry_msgs::msg::Vector3 scaleTail;
+  extern const geometry_msgs::msg::Vector3 scaleLine;
 }
-
-
 
 #endif // VISUILISATIONSETTINGS_H

@@ -682,7 +682,7 @@ cv::Mat imageController::detectPostProcess(cv::Mat input_image, std::vector<cv::
   return input_image;
 }
 
-cv::Mat imageController::generateMask(cv::Mat &image) {
+cv::Mat imageController::generateMask(cv::Mat image) {
   std::vector<DetectedObject> detectedObjects = detect(image);
   /*
   std::vector<DetectedObject> detections = imageController_->detectSegment(detectionImage);

@@ -28,46 +28,14 @@
 #include "picasso_bot/srv/get_pose_array.hpp"
 
 /*
-Camera is realsense D435i
-
 // Camera node: (Will need to launch this with launcher)
 ros2 launch realsense2_camera rs_launch.py enable_rgbd:=true rgb_camera.color_profile:=640x480x30 depth_module.depth_profile:=640x480x30 enable_sync:=true align_depth.enable:=true enable_color:=true enable_depth:=true
-
-// from rosbag
-ros2 launch realsense2_camera rs_launch.py rosbag_filename:="/full/path/to/rosbag/file" align_depth.enable:=true
-
-// arm
-ros2 launch ur_robot_driver ur_control.launch.py ur_type:=ur3e robot_ip:=192.168.1.102 launch_rviz:=false initial_joint_controller:=joint_trajectory_controller use_fake_hardware:=true
-
-ros2 launch ur_moveit_config ur_moveit.launch.py ur_type:=ur3e launch_rviz:=true use_fake_hardware:=true
-
-// Default topic list:
-https://dev.intelrealsense.com/docs/ros2-wrapper
-> ros2 node list
-/camera/camera
-
-> ros2 topic list
-/camera/camera/color/camera_info
-/camera/camera/color/image_raw
-/camera/camera/color/metadata
-/camera/camera/depth/camera_info
-/camera/camera/depth/image_rect_raw
-/camera/camera/depth/metadata
-/camera/camera/extrinsics/depth_to_color
-/camera/camera/imu
-
-> ros2 service list
-/camera/camera/device_info
-
-// Useful links:
-https://docs.ros.org/en/humble/p/librealsense2/doc/d435i.html
-https://github.com/IntelRealSense/librealsense/tree/development
 */
 
 class PicassoEyes : public rclcpp::Node {
 public:
   PicassoEyes(void);
-  cv::Mat getSketchPreview();
+  
 private:
   // settings
   int pubCompressQuality_ = 80;
@@ -106,10 +74,7 @@ private:
   // Toolpath generation
   std::map<int, std::shared_ptr<Contour>> toolPaths_;
   std::vector<std::pair<int, bool>> contourOrder_;
-
-
-
-  geometry_msgs::msg::PoseArray outputPoseArray_; // Holds copy of last generated pose array msg.
+  int contourOrderIndex_ = 0;
   
   
   /// @brief Updates ImageController with new camera image. If ImageController object not made, creates.
@@ -154,8 +119,6 @@ private:
 
   /// @brief Generate sketch from input image.
   cv::Mat generateSketch(cv::Mat &image, const int blurPasses = 1, const int blurKernalSize = 3, const int colourSteps = 3, const bool showEdges = false);
-
-  
 
   /// @brief Temporary function for testing.
   void tempFunction(void);
