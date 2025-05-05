@@ -8,7 +8,7 @@ from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, TimerAction, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 
 def generate_launch_description():
   ld = LaunchDescription()
@@ -29,7 +29,6 @@ def generate_launch_description():
   # Launch configurations
   urType = 'ur3e'
   urIP = '111.111.111.111'
-  urController = 'joint_trajectory_controller'
   urMockHardware = LaunchConfiguration('ur_mock_hardware')
   urStartDelay = 3.0  # [sec].
   moveItStartDelay = 3.0  # [sec].
@@ -43,14 +42,8 @@ def generate_launch_description():
     output="screen"
   )
 
-  # Allow rviz if not using mock hardware.
-  if (launchRVIZ == 'true') and (urMockHardware == 'false'):
-    ur_sim_rviz = 'true'
-
-  else:
-    ur_sim_rviz = 'false'
-
-  ur_sim_gz = IncludeLaunchDescription(
+  # Sim only
+  ur_sim_driver = IncludeLaunchDescription(
     PythonLaunchDescriptionSource([
       os.path.join(get_package_share_directory("ur_simulation_gazebo"), "launch"),
       "/ur_sim_control.launch.py"
@@ -58,14 +51,14 @@ def generate_launch_description():
 
     launch_arguments={
       "ur_type": urType,
-      "initial_joint_controller": urController,
-      "launch_rviz": ur_sim_rviz, 
+      "gazebo_gui": urMockHardware,
+      "launch_rviz": "false"
     }.items(),
 
     condition=IfCondition(urMockHardware)
     )
-    
 
+  # Non-Sim only
   ur_driver = IncludeLaunchDescription(
     PythonLaunchDescriptionSource([
       os.path.join(get_package_share_directory('ur_robot_driver'), 'launch'),
@@ -75,27 +68,31 @@ def generate_launch_description():
     launch_arguments={
       'ur_type': urType,
       'robot_ip': urIP,
-      'launch_rviz': 'false',
-      'initial_joint_controller': urController,
-      'use_fake_hardware': urMockHardware
-    }.items()
+      'launch_rviz': "false",
+      'use_fake_hardware': urMockHardware,
+      'controller_spawner_timeout': '60'
+    }.items(),
+
+    condition=UnlessCondition(urMockHardware)
   )
 
   move_it = IncludeLaunchDescription(
     PythonLaunchDescriptionSource([
-      os.path.join(get_package_share_directory("ur_moveit_config"), "/launch"), 
-      "/ur_moveit.launch.py"
+      os.path.join(get_package_share_directory("picasso_bot"), "launch"), 
+      "/picasso_arm_moveit_config.launch.py"
     ]),
     
     launch_arguments={
         "ur_type": urType,
+        "ur_mock_hardware": urMockHardware,
+        "robot_ip": urIP,
         "use_sim_time": urMockHardware,
         "launch_rviz": launchRVIZ,
         "use_fake_hardware": urMockHardware,
     }.items()
   )
 
-  # Start up sequence - add delay for URDriver and MoveIt to start.
+  # Node start delays.
   delayed_start_move_it = TimerAction(
     period=urStartDelay,
     actions=[move_it]
@@ -110,9 +107,12 @@ def generate_launch_description():
   ld.add_action(declare_ur_mock_hardware)
   ld.add_action(declare_launchRVIZ)
   
-  # Run remaining nodes.
-  ld.add_action(ur_sim_gz)
-  ld.add_action(ur_driver)
+  # Select driver.
+  if urMockHardware == 'true':
+    ld.add_action(ur_sim_driver)
+  else:
+    ld.add_action(ur_driver)
+
   ld.add_action(delayed_start_move_it)
   ld.add_action(delayed_start_picasso_arm)
 
