@@ -58,6 +58,14 @@ def launch_setup(context, *args, **kwargs):
       'rviz',
       'config_test_picasso_arm.rviz'
     )
+    ompl_planning_yaml = load_yaml("picasso_bot", "config/ompl_planning.yaml")
+    controllers_yaml = load_yaml("picasso_bot", "config/controllers.yaml")
+    servo_yaml = load_yaml("picasso_bot", "config/ur_servo.yaml")
+    robot_description_kinematics = os.path.join(
+      get_package_share_directory('picasso_bot'),
+      'config',
+      'kinematics.yaml'
+    )
 
     # Initialize Arguments
     ur_type = LaunchConfiguration("ur_type")
@@ -122,7 +130,7 @@ def launch_setup(context, *args, **kwargs):
             safety_k_position,
             " ",
             "name:=",
-            "ur",
+            "picasso_bot",
             " ",
             "ur_type:=",
             ur_type,
@@ -165,10 +173,6 @@ def launch_setup(context, *args, **kwargs):
         "publish_robot_description_semantic": _publish_robot_description_semantic
     }
 
-    robot_description_kinematics = PathJoinSubstitution(
-        [FindPackageShare(moveit_config_package), "config", "kinematics.yaml"]
-    )
-
     robot_description_planning = {
         "robot_description_planning": load_yaml(
             str(moveit_config_package.perform(context)),
@@ -184,11 +188,9 @@ def launch_setup(context, *args, **kwargs):
             "start_state_max_bounds_error": 0.1,
         }
     }
-    ompl_planning_yaml = load_yaml("ur_moveit_config", "config/ompl_planning.yaml")
     ompl_planning_pipeline_config["move_group"].update(ompl_planning_yaml)
 
     # Trajectory Execution Configuration
-    controllers_yaml = load_yaml("ur_moveit_config", "config/controllers.yaml")
     # the scaled_joint_trajectory_controller does not work on fake hardware
     change_controllers = use_sim_time.perform(context)  # Modified by Joseph
     if change_controllers == "true":
@@ -241,10 +243,6 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    # rviz with moveit configuration
-    # rviz_config_file = PathJoinSubstitution(
-        # [FindPackageShare(moveit_config_package), "rviz", "view_robot.rviz"]
-    # )
     rviz_node = Node(
         package="rviz2",
         condition=IfCondition(launch_rviz),
@@ -266,7 +264,6 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # Servo node for realtime control
-    servo_yaml = load_yaml("picasso_bot", "config/ur_servo.yaml")   # Modified by Joseph
     servo_params = {"moveit_servo": servo_yaml}
     servo_node = Node(
         package="moveit_servo",
@@ -277,7 +274,7 @@ def launch_setup(context, *args, **kwargs):
             robot_description,
             robot_description_semantic
         ],
-        output="screen",
+        output="screen"
     )
 
     nodes_to_start = [move_group_node, rviz_node, servo_node]
@@ -414,10 +411,18 @@ def generate_launch_description():
         )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?")
+        DeclareLaunchArgument(
+            "launch_rviz", 
+            default_value="true", 
+            description="Launch RViz?"
+        )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("launch_servo", default_value="true", description="Launch Servo?")
+        DeclareLaunchArgument(
+            "launch_servo", 
+            default_value="true", 
+            description="Launch Servo?"
+        )
     )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
