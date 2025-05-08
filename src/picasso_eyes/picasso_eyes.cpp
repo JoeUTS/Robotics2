@@ -19,7 +19,7 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
                                           std::bind(&PicassoEyes::serviceCaptureImage, 
                                           this, std::placeholders::_1, std::placeholders::_2)); 
 
-  servPreviewSketch_ = this->create_service<std_srvs::srv::Trigger>("/preview_sketch", 
+  servPreviewSketch_ = this->create_service<picasso_bot::srv::GetImage>("/preview_sketch", 
                                           std::bind(&PicassoEyes::servicePreviewSketch, 
                                           this, std::placeholders::_1, std::placeholders::_2)); 
 
@@ -27,7 +27,7 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
                                           std::bind(&PicassoEyes::servicePreviewSketch, 
                                           this, std::placeholders::_1, std::placeholders::_2)); 
 
-  servGenerateToolpath_ = this->create_service<std_srvs::srv::Trigger>("/draw_sketch", 
+  servGenerateToolpath_ = this->create_service<std_srvs::srv::Trigger>("/generate_toolpath", 
                                           std::bind(&PicassoEyes::serviceGenerateToolpath, 
                                           this, std::placeholders::_1, std::placeholders::_2));
 
@@ -35,7 +35,7 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
                                           std::bind(&PicassoEyes::serviceNextContour, 
                                           this, std::placeholders::_1, std::placeholders::_2));
 
-  serviceShutdown_ = this->create_service<std_srvs::srv::Trigger>("/picasso_eyes/shutdown_node", 
+  serviceShutdown_ = this->create_service<std_srvs::srv::Trigger>("/shutdown_node", 
                                           std::bind(&PicassoEyes::serviceShutdown, 
                                           this, std::placeholders::_1, std::placeholders::_2));
 }
@@ -98,8 +98,8 @@ void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::Sha
   }
 }
 
-void PicassoEyes::servicePreviewSketch(const std_srvs::srv::Trigger::Request::SharedPtr request,
-                                        std_srvs::srv::Trigger::Response::SharedPtr response) {
+void PicassoEyes::servicePreviewSketch(const picasso_bot::srv::GetImage::Request::SharedPtr request, 
+                                      picasso_bot::srv::GetImage::Response::SharedPtr response) {
   cv::Mat localImage = capturedImage_.clone();
   localImage = generateSketch(localImage, 1, 3, 3, true);
   
@@ -190,7 +190,7 @@ void PicassoEyes::serviceNextContour(const picasso_bot::srv::GetPoseArray::Reque
     
   } else {
     response->success = true;
-    response->poses = contourOrder_.at(contourOrderIndex_);
+    response->poses = toolPaths_.at(contourOrder_.at(contourOrderIndex_));
     contourOrderIndex_++;
     RCLCPP_INFO(this->get_logger(), "Next contour retrieved.");
   }
