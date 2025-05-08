@@ -235,7 +235,7 @@ void MainWindow::shutdownEyes(void) {
 
     auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
 
-    auto result = servCamerafeed_->async_send_request(request);
+    auto result = servEyesShutdown_->async_send_request(request);
     bool success = result.get()->success;
 }
 
@@ -244,7 +244,7 @@ bool MainWindow::captureImageServ(void) {
     std::chrono::time_point<std::chrono::system_clock> lastMsg;
     
     // Wait for service
-    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(200))) {
+    while (!servCaptureImage_ ->wait_for_service(std::chrono::milliseconds(200))) {
         // Prevent spaming messages
         std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
         std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
@@ -257,7 +257,7 @@ bool MainWindow::captureImageServ(void) {
 
     auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
 
-    auto result = servCamerafeed_->async_send_request(request);
+    auto result = servCaptureImage_->async_send_request(request);
     bool success = false;
 
     // Await responce
@@ -282,7 +282,7 @@ bool MainWindow::discardImage(void) {
     std::chrono::time_point<std::chrono::system_clock> lastMsg;
     
     // Wait for service
-    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(200))) {
+    while (!servDiscardImage_ ->wait_for_service(std::chrono::milliseconds(200))) {
         // Prevent spaming messages
         std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
         std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
@@ -294,7 +294,7 @@ bool MainWindow::discardImage(void) {
     }
 
     auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
-    auto result = servCamerafeed_->async_send_request(request);
+    auto result = servDiscardImage_->async_send_request(request);
     bool success = false;
 
     // Await responce
@@ -319,7 +319,7 @@ bool MainWindow::generateToolpath(void) {
     std::chrono::time_point<std::chrono::system_clock> lastMsg;
     
     // Wait for service
-    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(200))) {
+    while (!servGenerateToolpath_ ->wait_for_service(std::chrono::milliseconds(200))) {
         // Prevent spaming messages
         std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
         std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
@@ -332,7 +332,7 @@ bool MainWindow::generateToolpath(void) {
 
     auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
 
-    auto result = servCamerafeed_->async_send_request(request);
+    auto result = servGenerateToolpath_->async_send_request(request);
     bool success = false;
 
     // Await responce
@@ -352,4 +352,40 @@ bool MainWindow::generateToolpath(void) {
     return success;
 }
 
-cv::Mat MainWindow::previewSketch(void);
+sensor_msgs::msg::Image MainWindow::previewSketchServ(void) {
+    auto messagePeriod = std::chrono::milliseconds(1000);
+    std::chrono::time_point<std::chrono::system_clock> lastMsg;
+    
+    // Wait for service
+    while (!servPreviewSketch_->wait_for_service(std::chrono::milliseconds(200))) {
+        // Prevent spaming messages
+        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
+        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        
+        if (timeSinceLastMsg >= messagePeriod) {
+            lastMsg = std::chrono::system_clock::now();
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'capture_image' to connect");
+        }
+    }
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+    auto result = servPreviewSketch_->async_send_request(request);
+    bool success = false;
+
+    // Await responce
+    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
+        if (result.get()->success) {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Image capturesd.");
+            success = true;
+
+        } else {
+            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to capture image.");
+        }
+
+    } else {
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'capture_image'");
+    }
+
+    return success;
+}

@@ -101,13 +101,17 @@ void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::Sha
 void PicassoEyes::servicePreviewSketch(const picasso_bot::srv::GetImage::Request::SharedPtr request, 
                                       picasso_bot::srv::GetImage::Response::SharedPtr response) {
   cv::Mat localImage = capturedImage_.clone();
-  localImage = generateSketch(localImage, 1, 3, 3, true);
+  localImage = generateSketch(localImage, 1, 3, 3);
   
   if (contourOrder_.empty()) {
     response->success = false;
     RCLCPP_INFO(this->get_logger(), "Failed to generate sketch.");
     
   } else {
+    // convert to image msg
+    std_msgs::msg::Header header;
+    cv_bridge::CvImage img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, localImage);
+    img_bridge.toImageMsg(response->image);
     response->success = true;
     RCLCPP_INFO(this->get_logger(), "Sketch generated successfully.");
   }

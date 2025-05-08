@@ -23,7 +23,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
-#include
+#include "picasso_bot/srv/get_image.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -78,6 +78,6 @@ private:
 
     bool generateToolpath(void);
 
-    cv::Mat previewSketch(void);
+    sensor_msgs::msg::Image previewSketchServ(void);
 };
 #endif // MAINWINDOW_H
