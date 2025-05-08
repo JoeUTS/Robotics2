@@ -9,10 +9,6 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
   // publishers
   pubVis_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/vis_toolpath", 3);
   pubCameraImage_ = this->create_publisher<sensor_msgs::msg::Image>("/processed_camera_image", 3);
-  
-  // timers
-  timer_ = this->create_wall_timer(
-    timer_duration_, std::bind(&PicassoEyes::tempFunction, this));
 
   // services
   servCameraToggleRepub_ = this->create_service<std_srvs::srv::Trigger>("/camera_feed_toggle", 
@@ -23,33 +19,46 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
                                           std::bind(&PicassoEyes::serviceCaptureImage, 
                                           this, std::placeholders::_1, std::placeholders::_2)); 
 
-  servPreviewSketch_ = this->create_service<std_srvs::srv::Trigger>("/preview_sketch", 
+  servPreviewSketch_ = this->create_service<picasso_bot::srv::GetImage>("/preview_sketch", 
                                           std::bind(&PicassoEyes::servicePreviewSketch, 
                                           this, std::placeholders::_1, std::placeholders::_2)); 
 
-  servDrawSketch_ = this->create_service<std_srvs::srv::Trigger>("/draw_sketch", 
-                                          std::bind(&PicassoEyes::serviceDrawSketch, 
+  servDiscardImage_ = this->create_service<std_srvs::srv::Trigger>("/discard_image", 
+                                          std::bind(&PicassoEyes::servicePreviewSketch, 
+                                          this, std::placeholders::_1, std::placeholders::_2)); 
+
+  servGenerateToolpath_ = this->create_service<std_srvs::srv::Trigger>("/generate_toolpath", 
+                                          std::bind(&PicassoEyes::serviceGenerateToolpath, 
                                           this, std::placeholders::_1, std::placeholders::_2));
 
-  servNextContour_ = this->create_service<std_srvs::srv::Trigger>("/next_contour", 
+  servNextContour_ = this->create_service<picasso_bot::srv::GetPoseArray>("/next_contour", 
                                           std::bind(&PicassoEyes::serviceNextContour, 
                                           this, std::placeholders::_1, std::placeholders::_2));
 
-  serviceShutdown_ = this->create_service<std_srvs::srv::Trigger>("/picasso_eyes/shutdown_node", 
+  serviceShutdown_ = this->create_service<std_srvs::srv::Trigger>("/shutdown_node", 
                                           std::bind(&PicassoEyes::serviceShutdown, 
                                           this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void PicassoEyes::callbackCameraReceive(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
-  if (imageController_ == NULL) {
-    imageController_ = std::make_shared<imageController>(incomingMsg, this->shared_from_this());
-    
-  } else {
-    sensor_msgs::msg::Image cameraImage = imageController_->updateCameraImage(incomingMsg);
+  if (cameraFeedEnabled_) { // Camera feed toggle.
 
-    if (cameraFeedEnabled_) {
-      compressImage(cameraImage, 80);
-      pubCameraImage_->publish(cameraImage);
+    if (imageController_ == NULL) { // First image received.
+      imageController_ = std::make_shared<imageController>(incomingMsg, this->shared_from_this());
+      
+    } else {
+      sensor_msgs::msg::Image cameraImage = imageController_->updateCameraImage(incomingMsg);
+      sensor_msgs::msg::Image publishedImage;
+
+      if (imageCaptured_) { // Image captured.
+        publishedImage = capturedImageMsg_;
+
+      } else {
+        publishedImage = cameraImage;
+      }
+
+      compressImage(publishedImage, pubCompressQuality_);
+      pubCameraImage_->publish(publishedImage);
     }
   }
 }
@@ -64,40 +73,134 @@ void PicassoEyes::serviceToggleCameraFeed(const std_srvs::srv::Trigger::Request:
 
 void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::SharedPtr request,
                                       std_srvs::srv::Trigger::Response::SharedPtr response) {
-  // TO DO: Make function for same
-  response->success = true;
-  std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
-  RCLCPP_INFO(this->get_logger(), "Camera feed turned %s", state.c_str());
+  // Image capture
+  capturedImageMsg_ = imageController_->getStoredImage().rgb;
+  capturedImage_ = imageController_->msg2Mat(capturedImageMsg_);
+  
+  // Mask generation
+  if (!maskGenerationActive_) {
+    maskGenerationActive_ = true;
+    maskThread_ =  std::unique_ptr<std::thread>(new std::thread(&imageController::generateMask, imageController_, capturedImage_));
+
+  } else {
+    RCLCPP_WARN(this->get_logger(), "Cannot generate mask: Mask Generation already active.");
+  }
+
+  if (capturedImage_.empty()) {
+    imageCaptured_ = false;
+    response->success = false;
+    RCLCPP_INFO(this->get_logger(), "Failed to capture image.");
+    
+  } else {
+    imageCaptured_ = true;
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "Captured Image");
+  }
 }
 
-void PicassoEyes::servicePreviewSketch(const std_srvs::srv::Trigger::Request::SharedPtr request,
-                                        std_srvs::srv::Trigger::Response::SharedPtr response) {
-  // TO DO: Make function for same
-  response->success = true;
-  std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
-  RCLCPP_INFO(this->get_logger(), "Camera feed turned %s", state.c_str());
+void PicassoEyes::servicePreviewSketch(const picasso_bot::srv::GetImage::Request::SharedPtr request, 
+                                      picasso_bot::srv::GetImage::Response::SharedPtr response) {
+  cv::Mat localImage = capturedImage_.clone();
+  localImage = generateSketch(localImage, 1, 3, 3, true);
+  
+  if (contourOrder_.empty()) {
+    response->success = false;
+    RCLCPP_INFO(this->get_logger(), "Failed to generate sketch.");
+    
+  } else {
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "Sketch generated successfully.");
+  }
 }
 
-void PicassoEyes::serviceDrawSketch(const std_srvs::srv::Trigger::Request::SharedPtr request,
+void PicassoEyes::serviceDiscardImage(const std_srvs::srv::Trigger::Request::SharedPtr request, 
+                              std_srvs::srv::Trigger::Response::SharedPtr response) {
+  capturedImage_ = cv::Mat();
+  capturedImageMsg_ = sensor_msgs::msg::Image();
+  imageCaptured_ = false;
+  toolPaths_.clear();
+  contourOrder_.clear();
+
+  response->success = true;
+  RCLCPP_INFO(this->get_logger(), "Discarded captured image.");
+}
+
+void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request::SharedPtr request,
                                     std_srvs::srv::Trigger::Response::SharedPtr response) {
-  // TO DO: Make function for same
-  response->success = true;
-  std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
-  RCLCPP_INFO(this->get_logger(), "Camera feed turned %s", state.c_str());
+  std::string errorStart = "Cannot generate toolpath:";
+  cv::Mat localImage = capturedImage_.clone();
+
+  if (localImage.empty()) {
+    RCLCPP_WARN(this->get_logger(), "%s empty image", errorStart.c_str());
+    response->success = false;
+    return;
+  }
+
+  localImage = generateSketch(localImage, 1, 3, 3);
+  toolPaths_ = generateToolpath(localImage, true);
+
+  if (toolPaths_.empty()) {
+    RCLCPP_WARN(this->get_logger(), "%s empty toolpaths", errorStart.c_str());
+    response->success = false;
+    return;
+  }
+
+  // Perform TSP
+  RCLCPP_INFO(this->get_logger(), "Solving TSP...");
+
+  if (salesmanSolver_ == NULL) {
+    salesmanSolver_ = std::make_shared<SalesmanSolver>(this->shared_from_this());
+  }
+
+  salesmanSolver_->setContourList(toolPaths_);
+  std::chrono::time_point<std::chrono::system_clock> startTime = std::chrono::system_clock::now();
+  salesmanSolver_->solve();
+  std::chrono::duration<double> duration = std::chrono::system_clock::now() - startTime;
+  double solveTime = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+
+  contourOrder_ = salesmanSolver_->getTravelOrder();
+  contourOrderIndex_ = 0;
+  
+  if (contourOrder_.empty()) {
+    RCLCPP_WARN(this->get_logger(), "%s empty draw order", errorStart.c_str());
+    response->success = false;
+    
+  } else {
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "Toolpath generated successfully, solve time: %:.2f ms", solveTime / 1000);
+  }
+
+  return;
 }
 
-void PicassoEyes::serviceNextContour(const std_srvs::srv::Trigger::Request::SharedPtr request,
-  std_srvs::srv::Trigger::Response::SharedPtr response) {
-  // TO DO: Make function for same
-  response->success = true;
-  std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
-  RCLCPP_INFO(this->get_logger(), "Camera feed turned %s", state.c_str());
+void PicassoEyes::serviceNextContour(const picasso_bot::srv::GetPoseArray::Request::SharedPtr request, 
+                                      picasso_bot::srv::GetPoseArray::Response::SharedPtr response) {
+  std::string errorStart = "Cannot get next contour:";
+
+  if (contourOrder_.empty() || contourOrderIndex_ == contourOrder_.size() - 1) {
+    response->success = false;
+    response->poses = geometry_msgs::msg::PoseArray();
+
+    if (contourOrder_.empty()) {
+      RCLCPP_WARN(this->get_logger(), "%s empty draw order", errorStart.c_str());
+
+    } else {
+      RCLCPP_INFO(this->get_logger(), "%s contour complete!", errorStart);
+    }
+    
+  } else {
+    response->success = true;
+    response->poses = toolPaths_.at(contourOrder_.at(contourOrderIndex_));
+    contourOrderIndex_++;
+    RCLCPP_INFO(this->get_logger(), "Next contour retrieved.");
+  }
 }
 
 void PicassoEyes::serviceShutdown(const std_srvs::srv::Trigger::Request::SharedPtr request,
   std_srvs::srv::Trigger::Response::SharedPtr response) {
   response->success = true;
   RCLCPP_INFO(this->get_logger(), "%s shutting down.", this->get_name());
+
   rclcpp::shutdown(); 
 }
 
@@ -108,7 +211,7 @@ sensor_msgs::msg::Image PicassoEyes::compressImage(sensor_msgs::msg::Image &imag
   compression_params.push_back(quality);
   cv::imencode(".jpg", imageController_->msg2Mat(imageMsg), buffer, compression_params);
 
-  auto compressedMsg = sensor_msgs::msg::Image();
+  sensor_msgs::msg::Image compressedMsg = sensor_msgs::msg::Image();
   compressedMsg.header = imageMsg.header;
   compressedMsg.height = imageMsg.height;
   compressedMsg.width = imageMsg.width;
@@ -120,19 +223,62 @@ sensor_msgs::msg::Image PicassoEyes::compressImage(sensor_msgs::msg::Image &imag
   return compressedMsg;
 }
 
-std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &image, 
-                                                                      const bool normalise, 
-                                                                      const int blurPasses, 
-                                                                      const int blurKernalSize, 
-                                                                      const int colourSteps) {
+std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &image, const bool visualise) {
   std::map<int, std::shared_ptr<Contour>> toolPaths;
 
-  // Return on empty msg.
   if (image.empty()) {
-    RCLCPP_WARN(this->get_logger(), "Empty image");
+    RCLCPP_WARN(this->get_logger(), "Failed to generate toolpath: empty image");
     return toolPaths;
   }
-  
+
+  if (image.dims > 1) { // Assume sketch not generated.
+    image = generateSketch(image);
+  }
+
+  toolPaths = imageController_->getToolpaths(image);
+
+  if (visualise) {
+    visualization_msgs::msg::MarkerArray markerArrayToolpath;
+    unsigned int markerId = 0;
+
+    // Generate toolpaths visualization
+    for (auto &[key, contour] : toolPaths) {
+      geometry_msgs::msg::Pose poseHead;
+      poseHead.position.x = contour->getHead()->x;
+      poseHead.position.y = contour->getHead()->y;
+      addMarkerPoint(markerArrayToolpath, markerId++, poseHead, Scales::scaleHead, Colours::green);
+
+      geometry_msgs::msg::Pose poseTail;
+      poseTail.position.x = contour->getTail()->x;
+      poseTail.position.y = contour->getTail()->y;
+      addMarkerPoint(markerArrayToolpath, markerId++, poseTail, Scales::scaleTail, Colours::red);
+
+      std::vector<geometry_msgs::msg::Point> path = contour->getPoints();
+      addMarkerPath(markerArrayToolpath, markerId++, path, Scales::scaleLine, Colours::white);
+    }
+
+    // Publish visualization
+    if (markerArrayToolpath.markers.empty()) {
+      RCLCPP_WARN(this->get_logger(), "Empty markers");
+
+    } else {
+      pubVis_->publish(markerArrayToolpath);
+    }
+  }
+
+  return toolPaths;
+}
+
+cv::Mat PicassoEyes::generateSketch(cv::Mat &image, const int blurPasses, const int blurKernalSize, const int colourSteps, const bool showEdges) {
+  std::string errorStart = "Failed to generate sketch: ";
+  if (image.empty()) {
+    RCLCPP_WARN(this->get_logger(), "%s empty image", errorStart.c_str());
+    return cv::Mat();
+  }
+
+  // Remove background
+  // TO DO
+
   // Apply blur.
   for (int i = 0; i < blurPasses; i++) {
     imageController_->editImageBlurMedian(image, blurKernalSize);
@@ -147,137 +293,12 @@ std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &i
   imageController_->editImageGreyscale(edges);
   imageController_->detectEdges(edges, 0.1);
 
-  // Generate contours.
-  toolPaths = imageController_->getToolpaths(edges);
-
-  return toolPaths;
-}
-
-void PicassoEyes::tempFunction(void) {
-  cv::Mat imageRGB = imageController_->msg2Mat(imageController_->getStoredImage().rgb);
-
-  //cv::Mat imageRGB = imread("local/resized_test_istockphoto.jpg", cv::IMREAD_UNCHANGED);
-
-  if (imageRGB.empty()) {
-    return;
+  if (showEdges) {
+    cv::imshow("Sketch Preview", edges);
+    cv::waitKey(1);
   }
 
-  // Function settings.
-  // TO DO: Move elsewhere.
-  std_msgs::msg::ColorRGBA colourHead;
-  colourHead.r = 0.0;
-  colourHead.g = 1.0;
-  colourHead.b = 0.0;
-  colourHead.a = 1.0;
-
-  std_msgs::msg::ColorRGBA colourTail;
-  colourTail.r = 1.0;
-  colourTail.g = 0.0;
-  colourTail.b = 0.0;
-  colourTail.a = 1.0;
-
-  std_msgs::msg::ColorRGBA colourPath;
-  colourPath.r = 1.0;
-  colourPath.g = 1.0;
-  colourPath.b = 1.0;
-  colourPath.a = 1.0;
-
-  geometry_msgs::msg::Vector3 scaleHead;
-  scaleHead.x = 0.001;
-  scaleHead.y = 0.001;
-  scaleHead.z = 0.02;
-
-  geometry_msgs::msg::Vector3 scaleTail;
-  scaleTail.x = 0.002;
-  scaleTail.y = 0.002;
-  scaleTail.z = 0.01;
-
-  geometry_msgs::msg::Vector3 scaleLine;
-  scaleLine.x = 0.001;
-
-  // Localise people.
-  // TO DO
-  // Spin off new thread for this?
-  //cv::Mat detectionImage = imageRGB.clone();
-  //std::vector<DetectedObject> detectedObjects = imageController_->detect(detectionImage);
-  /*
-  std::vector<DetectedObject> detections = imageController_->detectSegment(detectionImage);
-  for (const auto& obj : detections) {
-    // You can now use obj.mask (a binary cv::Mat) for further processing
-    // For example, to apply the mask to the original image region:
-    cv::Mat object_region = detectionImage(obj.box);
-    cv::Mat masked_object;
-    object_region.copyTo(masked_object, obj.mask); // Apply the binary mask
-    cv::imshow("Masked Object", masked_object);
-  }
-  */
-  //std::vector<cv::Mat> detections = imageController_->detectPreProcess(detectionImage);
-  //cv::Mat img = imageController_->detectPostProcess(detectionImage, detections);
-  //cv::imshow("image", detectionImage);
-  //cv::waitKey(1);
-
-  // - Return an array of detected people with location, size, bounding box ect.
-  std::list<geometry_msgs::msg::Vector3> personImageLocations;
-
-  // Remove background
-  // TO DO
-
-  // Generate toolpaths
-  const int blurPasses = 1;
-  const int blurKernalSize = 3;
-  const int colourSteps = 3;
-  std::map<int, std::shared_ptr<Contour>> toolPaths = generateToolpath(imageRGB, true, blurPasses, blurKernalSize, colourSteps);
-
-  if (toolPaths.empty()) {
-    RCLCPP_WARN(this->get_logger(), "Empty toolpaths");
-    return;
-  }
-
-  // Generate toolpaths visualization
-  visualization_msgs::msg::MarkerArray markerArrayToolpath;
-  unsigned int markerId = 0;
-
-  for (auto &[key, contour] : toolPaths) {
-    geometry_msgs::msg::Pose poseHead;
-    poseHead.position.x = contour->getHead()->x;
-    poseHead.position.y = contour->getHead()->y;
-    addMarkerPoint(markerArrayToolpath, markerId++, poseHead, scaleHead, colourHead);
-
-    geometry_msgs::msg::Pose poseTail;
-    poseTail.position.x = contour->getTail()->x;
-    poseTail.position.y = contour->getTail()->y;
-    addMarkerPoint(markerArrayToolpath, markerId++, poseTail, scaleTail, colourTail);
-    
-    int sizeBefore = markerArrayToolpath.markers.size();
-    std::vector<geometry_msgs::msg::Point> path = contour->getPoints();
-    addMarkerPath(markerArrayToolpath, markerId++, path, scaleLine, colourPath);
-
-    int sizeDelta = markerArrayToolpath.markers.size() - sizeBefore;
-
-    if (sizeDelta > 1) {
-      RCLCPP_WARN(this->get_logger(), "Path working");
-    }
-  }
-
-  // Publish visualization
-  if (markerArrayToolpath.markers.empty()) {
-    RCLCPP_WARN(this->get_logger(), "Empty markers");
-    return;
-  }
-
-  pubVis_->publish(markerArrayToolpath);
-  
-  // Perform TSP
-  //if (salesmanSolver_ == NULL) {
-    //salesmanSolver_ = std::make_shared<SalesmanSolver>(this->shared_from_this());
-  //}
-
-  //salesmanSolver_->setContourList(toolPaths);
-  //salesmanSolver_->solve();
-  //salesmanSolver_->getTravelOrder();
-  
-  // Publish pose array vs send via service
-  
+  return edges;
 }
 
 geometry_msgs::msg::Quaternion PicassoEyes::rpyToQuaternion(const double roll, 
@@ -335,36 +356,6 @@ void PicassoEyes::addMarkerPath(visualization_msgs::msg::MarkerArray &markerArra
   markerArray.markers.push_back(marker);
 }
 
-cv::Mat PicassoEyes::getSketchPreview() {
-  if (!imageController_) {
-      RCLCPP_ERROR(this->get_logger(), "ImageController is not initialized.");
-      return cv::Mat();
-  }
-
-  // Retrieve the stored image
-  cv::Mat imageRGB = imageController_->msg2Mat(imageController_->getStoredImage().rgb);
-  if (imageRGB.empty()) {
-      RCLCPP_ERROR(this->get_logger(), "No image available for sketch preview.");
-      return cv::Mat();
-  }
-
-  // Generate toolpaths
-  double canvasWidth = 5.0;  // Example canvas width in meters
-  double scaleToolpath = canvasWidth / imageRGB.cols;  // Scale to fit canvas
-  std::map<int, std::shared_ptr<Contour>> toolPaths = generateToolpath(imageRGB, scaleToolpath, 1, 3, 3);
-
-  // Create a blank image to draw the sketch
-  cv::Mat sketch = cv::Mat::zeros(imageRGB.size(), CV_8UC3);
-  for (auto &[key, contour] : toolPaths) {
-      // Convert ROS points to OpenCV points
-      std::vector<cv::Point> cvPoints = convertToCvPoints(contour->getPoints());
-
-      // Draw the contour on the sketch
-      cv::polylines(sketch, cvPoints, false, cv::Scalar(255, 255, 255), 1);
-  }
-
-  return sketch;
-}
 
 std::vector<cv::Point> PicassoEyes::convertToCvPoints(const std::vector<geometry_msgs::msg::Point> &rosPoints) {
   std::vector<cv::Point> cvPoints;
@@ -372,4 +363,21 @@ std::vector<cv::Point> PicassoEyes::convertToCvPoints(const std::vector<geometry
       cvPoints.emplace_back(cv::Point(static_cast<int>(rosPoint.x), static_cast<int>(rosPoint.y)));
   }
   return cvPoints;
+}
+
+void PicassoEyes::generateMask(cv::Mat &image) {
+  // TO DO: Finish
+  if (maskGenerationActive_) {
+    RCLCPP_WARN(this->get_logger(), "Cannot generate mask: Mask Generation already active.");
+    return;
+  } 
+
+  maskGenerationActive_ = true;
+  RCLCPP_INFO(this->get_logger(), "Mask generation started.");
+  // TO DO: Add calculate processing time.
+  cv::Mat detectionImage = image.clone();
+  maskThread_ =  std::unique_ptr<std::thread>(new std::thread(&imageController::generateMask, imageController_, detectionImage));
+
+  maskReady_ = false;
+  maskGenerationActive_ = false;
 }
