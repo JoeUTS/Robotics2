@@ -3,9 +3,17 @@
 
 #include <chrono>
 #include <memory>
+#include <functional>
+#include <string>
+#include <iostream>
+#include <vector>
+#include "picasso_eyes.h"
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <geometry_msgs/msg/pose.hpp>
 
 #include "picasso_bot/srv/get_pose_array.hpp"
 
@@ -24,7 +32,7 @@ public:
 private:
 
   rclcpp::TimerBase::SharedPtr timer_;  // Timer for periodic execution
-  std::shared_ptr<PicassoEyes> eyes_;                // Pointer to the Eyes system
+  //std::shared_ptr<PicassoEyes> eyes_;                // Pointer to the Eyes system
   std::vector<geometry_msgs::msg::Point> target_points_; // List of target points to move through
   size_t current_target_index_ = 0;
   rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr toolpath_subscriber_;
