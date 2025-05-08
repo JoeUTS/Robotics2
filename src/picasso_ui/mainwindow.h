@@ -23,6 +23,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
+#include
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -57,6 +59,10 @@ private:
 
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCamerafeed_;  // Added service to toggle camera feed - Joseph
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEyesShutdown_; // Added service to shutdown picasso eyes - Joseph.
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;
+    rclcpp::Client<picasso_bot::srv::GetImage>::SharedPtr servPreviewSketch_;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_; 
     
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
@@ -65,5 +71,13 @@ private:
 
     // Run this function to shutdown eyes - Joseph
     void shutdownEyes(void);
+
+    bool captureImageServ(void);
+
+    bool discardImage(void);
+
+    bool generateToolpath(void);
+
+    cv::Mat previewSketch(void);
 };
 #endif // MAINWINDOW_H

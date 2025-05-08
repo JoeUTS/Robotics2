@@ -56,9 +56,15 @@ find_package(rosidl_default_generators REQUIRED) # Custom service
 # ROS2_ws package: "/home/<username>/ros2_ws/install/**"
 
 # Custom services
+set(interface_dep
+  builtin_interfaces
+  geometry_msgs
+  sensor_msgs
+)
 rosidl_generate_interfaces(${PROJECT_NAME}
   srv/GetPoseArray.srv
-  DEPENDENCIES builtin_interfaces geometry_msgs
+  srv/GetImage.srv
+  DEPENDENCIES ${interface_dep}
 )
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -86,8 +92,9 @@ set(picasso_arm_src
 
 add_executable(picasso_arm ${picasso_arm_src})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
-target_link_libraries(picasso_arm "${cpp_typesupport_target}")
+target_link_libraries(picasso_arm ${cpp_typesupport_target})
 target_include_directories(picasso_arm PRIVATE
+                          AMENT_INCLUDE_DIRS
                           ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_arm
                           ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
 )
@@ -123,6 +130,7 @@ add_executable(picasso_eyes ${picasso_eyes_src})
 ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
 target_link_libraries(picasso_eyes "${cpp_typesupport_target}")
 target_include_directories(picasso_eyes PRIVATE
+                          AMENT_INCLUDE_DIRS
                           ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
 )
 

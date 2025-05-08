@@ -20,7 +20,11 @@ MainWindow::MainWindow(QWidget *parent)
         std::bind(&MainWindow::imageCallback, this, std::placeholders::_1));
 
     servCamerafeed_ = this->create_client<std_srvs::srv::Trigger>("/camera_feed_toggle");
-    servEyesShutdown_ = this->create_client<std_srvs::srv::Trigger>("/picasso_eyes/shutdown_node");
+    servEyesShutdown_ = this->create_client<std_srvs::srv::Trigger>("/shutdown_node");
+    servCaptureImage_ = this->create_client<std_srvs::srv::Trigger>("/capture_image");
+    servPreviewSketch_ = this->create_client<picasso_bot::srv::GetImage>("/preview_sketch");
+    servDiscardImage_ = this->create_client<std_srvs::srv::Trigger>("/discard_image");
+    servGenerateToolpath_ = this->create_client<std_srvs::srv::Trigger>("/generate_toolpath"); 
 
     // Connect button
     connect(ui->startCamera, &QPushButton::clicked, this, &MainWindow::startCamera);
@@ -196,7 +200,7 @@ bool MainWindow::toggleCameraFeed(void) {
             RCLCPP_WARN_STREAM(this->get_logger(), "Camera toggle failed.");
         }
 
-      } else {
+    } else {
         RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'camera_feed_toggle'");
     }
 
@@ -215,7 +219,7 @@ void MainWindow::shutdownEyes(void) {
         
         if (timeSinceLastMsg >= messagePeriod) {
             lastMsg = std::chrono::system_clock::now();
-            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'picasso_eyes/shutdown_node' to connect");
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'shutdown_node' to connect");
         }
     }
 
@@ -224,3 +228,118 @@ void MainWindow::shutdownEyes(void) {
     auto result = servCamerafeed_->async_send_request(request);
     bool success = result.get()->success;
 }
+
+bool MainWindow::captureImageServ(void) {
+    auto messagePeriod = std::chrono::milliseconds(1000);
+    std::chrono::time_point<std::chrono::system_clock> lastMsg;
+    
+    // Wait for service
+    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(200))) {
+        // Prevent spaming messages
+        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
+        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        
+        if (timeSinceLastMsg >= messagePeriod) {
+            lastMsg = std::chrono::system_clock::now();
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'capture_image' to connect");
+        }
+    }
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+    auto result = servCamerafeed_->async_send_request(request);
+    bool success = false;
+
+    // Await responce
+    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
+        if (result.get()->success) {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Image capturesd.");
+            success = true;
+
+        } else {
+            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to capture image.");
+        }
+
+    } else {
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'capture_image'");
+    }
+
+    return success;
+}
+    
+bool MainWindow::discardImage(void) {
+    auto messagePeriod = std::chrono::milliseconds(1000);
+    std::chrono::time_point<std::chrono::system_clock> lastMsg;
+    
+    // Wait for service
+    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(200))) {
+        // Prevent spaming messages
+        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
+        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        
+        if (timeSinceLastMsg >= messagePeriod) {
+            lastMsg = std::chrono::system_clock::now();
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'discard_image' to connect");
+        }
+    }
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+    auto result = servCamerafeed_->async_send_request(request);
+    bool success = false;
+
+    // Await responce
+    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
+        if (result.get()->success) {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Image capturesd.");
+            success = true;
+
+        } else {
+            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to capture image.");
+        }
+
+    } else {
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'discard_image'");
+    }
+
+    return success;
+}
+
+bool MainWindow::generateToolpath(void) {
+    auto messagePeriod = std::chrono::milliseconds(1000);
+    std::chrono::time_point<std::chrono::system_clock> lastMsg;
+    
+    // Wait for service
+    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(200))) {
+        // Prevent spaming messages
+        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
+        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        
+        if (timeSinceLastMsg >= messagePeriod) {
+            lastMsg = std::chrono::system_clock::now();
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'capture_image' to connect");
+        }
+    }
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+    auto result = servCamerafeed_->async_send_request(request);
+    bool success = false;
+
+    // Await responce
+    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
+        if (result.get()->success) {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Image capturesd.");
+            success = true;
+
+        } else {
+            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to capture image.");
+        }
+
+    } else {
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'capture_image'");
+    }
+
+    return success;
+}
+
+cv::Mat MainWindow::previewSketch(void);

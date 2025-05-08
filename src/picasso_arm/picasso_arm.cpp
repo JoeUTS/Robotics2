@@ -16,7 +16,7 @@ PicassoArm::PicassoArm(void) : Node("picasso_arm") {
         std::bind(&PicassoArm::moveToPose, this) 
     );
 
-    servNextContour_ = this->create_client<picasso_bot::srv::GetPoseArray>("/get_next_contour");
+    servNextContour_ = this->create_client<picasso_bot::srv::GetPoseArray>("/next_contour");
     
 }
 
@@ -113,7 +113,7 @@ geometry_msgs::msg::PoseArray PicassoArm::getNextContour(void) {
         
         if (timeSinceLastMsg >= messagePeriod) {
             lastMsg = std::chrono::system_clock::now();
-            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'get_next_contour' to connect");
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'next_contour' to connect");
         }
     }
 
@@ -140,7 +140,7 @@ geometry_msgs::msg::PoseArray PicassoArm::getNextContour(void) {
         }
 
     } else {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'get_next_contour'");
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'next_contour'");
     }
 
     return contour;

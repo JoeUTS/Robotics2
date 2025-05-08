@@ -48,7 +48,7 @@ private:
   // Services
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servCameraToggleRepub_;      // Toggle republishing camera feed to UI.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;           // Capture image for sketch.
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servPreviewSketch_;          // Generate sketch preview from captured image.
+  rclcpp::Service<picasso_bot::srv::GetImage>::SharedPtr servPreviewSketch_;          // Generate sketch preview from captured image.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;           // Discard captured image/sketch.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_;       // Generate draw order.
   rclcpp::Service<picasso_bot::srv::GetPoseArray>::SharedPtr servNextContour_; // Send next contour to draw.
@@ -88,7 +88,7 @@ private:
   void serviceCaptureImage(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /// @brief Service callback for previewing sketch from captured image.
-  void servicePreviewSketch(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+  void servicePreviewSketch(const picasso_bot::srv::GetImage::Request::SharedPtr request, picasso_bot::srv::GetImage::Response::SharedPtr response);
 
   /// @brief Service callback for discarding captured image.
   void serviceDiscardImage(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
