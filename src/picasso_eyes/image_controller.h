@@ -1,5 +1,5 @@
-#ifndef IMAGECONTROLLER_H
-#define IMAGECONTROLLER_H
+#ifndef IMAGE_CONTROLLER_H
+#define IMAGE_CONTROLLER_H
 
 #include <mutex>
 #include <array>
@@ -182,4 +182,4 @@ private:
   
 };
 
-#endif // IMAGECONTROLLER_H
+#endif // IMAGE_CONTROLLER_H

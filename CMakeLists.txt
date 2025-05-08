@@ -62,6 +62,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+ament_export_dependencies(rosidl_default_runtime)
 
 # Arm
 set(picasso_arm_dep
@@ -85,6 +86,7 @@ set(picasso_arm_src
 
 add_executable(picasso_arm ${picasso_arm_src})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
+target_link_libraries(picasso_arm "${cpp_typesupport_target}")
 target_include_directories(picasso_arm PRIVATE
                           ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_arm
                           ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
@@ -218,5 +220,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_dependencies(rosidl_default_runtime)
 ament_package()
