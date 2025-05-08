@@ -140,47 +140,47 @@ while (contourMsg.poses.size() > index) {
 
 */
 
-// geometry_msgs::msg::PoseArray PicassoArm::getNextContour(void) {
-//     auto messagePeriod = std::chrono::milliseconds(1000);
-//     std::chrono::time_point<std::chrono::system_clock> lastMsg;
-    
-//     // Wait for service
-//     while (!servNextContour_->wait_for_service(std::chrono::milliseconds(200))) {
-//         // Prevent spaming messages
-//         std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-//         std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+geometry_msgs::msg::PoseArray PicassoArm::getNextContour(void) {
+    auto messagePeriod = std::chrono::milliseconds(1000);
+    std::chrono::time_point<std::chrono::system_clock> lastMsg;
         
-//         if (timeSinceLastMsg >= messagePeriod) {
-//             lastMsg = std::chrono::system_clock::now();
-//             RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'next_contour' to connect");
-//         }
-//     }
+    // Wait for service
+    while (!servNextContour_->wait_for_service(std::chrono::milliseconds(200))) {
+    // Prevent spaming messages
+    std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
+    std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+            
+        if (timeSinceLastMsg >= messagePeriod) {
+            lastMsg = std::chrono::system_clock::now();
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'next_contour' to connect");
+        }
+    }
 
-//     auto request = std::make_shared<picasso_bot::srv::GetPoseArray::Request>();
-//     auto result = servNextContour_->async_send_request(request);
-    
-//     geometry_msgs::msg::PoseArray contour = geometry_msgs::msg::PoseArray();
-
-//     // Await responce
-//     if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
-//         bool success = result.get()->success;
+    auto request = std::make_shared<picasso_bot::srv::GetPoseArray::Request>();
+    auto result = servNextContour_->async_send_request(request);
         
-//         if (success) {
-//             RCLCPP_INFO_STREAM(this->get_logger(), "Contour received.");
-//             success = true;
-//             prevContourExists_ = true;
-//             contour = result.get()->poses;
+    geometry_msgs::msg::PoseArray contour = geometry_msgs::msg::PoseArray();
 
-//         } else if (prevContourExists_ == false) {
-//             RCLCPP_INFO_STREAM(this->get_logger(), "Drawing complete.");
+    // Await responce
+    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
+        bool success = result.get()->success;
+                
+        if (success) {
+        RCLCPP_INFO_STREAM(this->get_logger(), "Contour received.");
+        success = true;
+        prevContourExists_ = true;
+        contour = result.get()->poses;
 
-//         } else {
-//             RCLCPP_WARN_STREAM(this->get_logger(), "Failed to get next contour.");
-//         }
+        } else if (prevContourExists_ == false) {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Drawing complete.");
 
-//     } else {
-//         RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'next_contour'");
-//     }
+        } else {
+            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to get next contour.");
+        }
 
-//     return contour;
-// }
+    } else {
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'next_contour'");
+    }
+
+    return contour;
+}

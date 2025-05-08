@@ -23,7 +23,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
-#include "picasso_bot/srv/get_image.hpp"
+#include <picasso_bot/srv/get_image.hpp>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

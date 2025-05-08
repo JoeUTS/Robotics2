@@ -26,6 +26,7 @@
 #include "salesman_solver.h"
 #include "VisulisationSettings.h"
 #include "picasso_bot/srv/get_pose_array.hpp"
+#include "picasso_bot/srv/get_image.hpp"
 
 /*
 // Camera node: (Will need to launch this with launcher)

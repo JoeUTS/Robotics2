@@ -1,7 +1,8 @@
 #include "image_controller.h"
 
-imageController::imageController(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg, std::shared_ptr<rclcpp::Node> parentNode) 
-  : lastCameraMsg_(*incomingMsg), parentNode_(parentNode) {
+imageController::imageController(std::shared_ptr<rclcpp::Node> parentNode, const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) 
+  : parentNode_(parentNode), lastCameraMsg_(*incomingMsg) {
+  colourIndex_ = 0;
   
   // Load YOLO model.
   std::string packageShareDir = ament_index_cpp::get_package_share_directory("picasso_bot");

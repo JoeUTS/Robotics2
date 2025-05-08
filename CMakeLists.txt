@@ -48,6 +48,7 @@ find_package(Qt5 REQUIRED COMPONENTS Widgets Core Multimedia MultimediaWidgets)
 find_package(ros_image_to_qimage REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED) # Custom service
+find_package(builtin_interfaces REQUIRED) # Custom service
 
 # Add include directories
 # qt5: "/usr/include/x86_64-linux-gnu/qt5/**"
@@ -56,19 +57,20 @@ find_package(rosidl_default_generators REQUIRED) # Custom service
 # ROS2_ws package: "/home/<username>/ros2_ws/install/**"
 
 # Custom services
-set(interface_dep
-  builtin_interfaces
-  geometry_msgs
-  sensor_msgs
+include_directories(
+  include
+  ${CMAKE_SOURCE_DIR}/include
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   srv/GetPoseArray.srv
   srv/GetImage.srv
-  DEPENDENCIES ${interface_dep}
+  DEPENDENCIES builtin_interfaces geometry_msgs sensor_msgs
+)
+rosidl_get_typesupport_target(cpp_typesupport_target 
+  ${PROJECT_NAME} 
+  rosidl_typesupport_cpp
 )
 
-rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
-ament_export_dependencies(rosidl_default_runtime)
 
 # Arm
 set(picasso_arm_dep
@@ -92,9 +94,10 @@ set(picasso_arm_src
 
 add_executable(picasso_arm ${picasso_arm_src})
 ament_target_dependencies(picasso_arm ${picasso_arm_dep})
-target_link_libraries(picasso_arm ${cpp_typesupport_target})
+target_link_libraries(picasso_arm "${cpp_typesupport_target}")
 target_include_directories(picasso_arm PRIVATE
-                          AMENT_INCLUDE_DIRS
+                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                          $<INSTALL_INTERFACE:include>
                           ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_arm
                           ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
 )
@@ -130,7 +133,8 @@ add_executable(picasso_eyes ${picasso_eyes_src})
 ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
 target_link_libraries(picasso_eyes "${cpp_typesupport_target}")
 target_include_directories(picasso_eyes PRIVATE
-                          AMENT_INCLUDE_DIRS
+                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                          $<INSTALL_INTERFACE:include>
                           ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
 )
 
@@ -169,8 +173,11 @@ target_link_libraries(picasso_ui
   Qt5::Widgets
   Qt5::Multimedia
   Qt5::MultimediaWidgets
+  "${cpp_typesupport_target}"
 )
 target_include_directories(picasso_ui PRIVATE
+                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                          $<INSTALL_INTERFACE:include>
                           ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_ui
 )
 
@@ -215,7 +222,7 @@ install(TARGETS
 install(
   DIRECTORY
   config
- # local # Comment out if causing build issues
+  local # Comment out if causing build issues
   launch
   rviz
   worlds
@@ -228,4 +235,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_dependencies(rosidl_default_runtime)
 ament_package()

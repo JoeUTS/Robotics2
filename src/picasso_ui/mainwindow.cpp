@@ -162,7 +162,7 @@ void MainWindow::previewSketch() {
         RCLCPP_ERROR(node->get_logger(), "Image label not found.");
     }a, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);*/
 
-    cv::Mat sketch = ;//code from picassoeyes
+    cv::Mat sketch = cv::Mat();//code from picassoeyes
     if (sketch.empty()) {
         RCLCPP_ERROR(this->get_logger(), "No sketch preview available.");
         return;
@@ -364,28 +364,30 @@ sensor_msgs::msg::Image MainWindow::previewSketchServ(void) {
         
         if (timeSinceLastMsg >= messagePeriod) {
             lastMsg = std::chrono::system_clock::now();
-            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'capture_image' to connect");
+            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'preview_sketch' to connect");
         }
     }
 
-    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+    auto request = std::make_shared<picasso_bot::srv::GetImage::Request>();
 
     auto result = servPreviewSketch_->async_send_request(request);
     bool success = false;
+    sensor_msgs::msg::Image image;
 
     // Await responce
     if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
         if (result.get()->success) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Image capturesd.");
+            RCLCPP_INFO_STREAM(this->get_logger(), "Sketch generated.");
             success = true;
+            image = result.get()->image;
 
         } else {
-            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to capture image.");
+            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to generate sketch.");
         }
 
     } else {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'capture_image'");
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'preview_sketch'");
     }
 
-    return success;
+    return image;
 }

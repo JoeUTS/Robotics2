@@ -24,7 +24,7 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
                                           this, std::placeholders::_1, std::placeholders::_2)); 
 
   servDiscardImage_ = this->create_service<std_srvs::srv::Trigger>("/discard_image", 
-                                          std::bind(&PicassoEyes::servicePreviewSketch, 
+                                          std::bind(&PicassoEyes::serviceDiscardImage, 
                                           this, std::placeholders::_1, std::placeholders::_2)); 
 
   servGenerateToolpath_ = this->create_service<std_srvs::srv::Trigger>("/generate_toolpath", 
@@ -44,7 +44,7 @@ void PicassoEyes::callbackCameraReceive(const realsense2_camera_msgs::msg::RGBD:
   if (cameraFeedEnabled_) { // Camera feed toggle.
 
     if (imageController_ == NULL) { // First image received.
-      imageController_ = std::make_shared<imageController>(incomingMsg, this->shared_from_this());
+      imageController_ = std::make_shared<imageController>(this->shared_from_this(), incomingMsg);
       
     } else {
       sensor_msgs::msg::Image cameraImage = imageController_->updateCameraImage(incomingMsg);
@@ -111,6 +111,8 @@ void PicassoEyes::servicePreviewSketch(const picasso_bot::srv::GetImage::Request
     // convert to image msg
     std_msgs::msg::Header header;
     cv_bridge::CvImage img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, localImage);
+    
+    // Send responce
     img_bridge.toImageMsg(response->image);
     response->success = true;
     RCLCPP_INFO(this->get_logger(), "Sketch generated successfully.");
@@ -171,7 +173,7 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
     
   } else {
     response->success = true;
-    RCLCPP_INFO(this->get_logger(), "Toolpath generated successfully, solve time: %:.2f ms", solveTime / 1000);
+    RCLCPP_INFO(this->get_logger(), "Toolpath generated successfully, solve time: %.2f ms", solveTime / 1000);
   }
 
   return;
@@ -189,12 +191,13 @@ void PicassoEyes::serviceNextContour(const picasso_bot::srv::GetPoseArray::Reque
       RCLCPP_WARN(this->get_logger(), "%s empty draw order", errorStart.c_str());
 
     } else {
-      RCLCPP_INFO(this->get_logger(), "%s contour complete!", errorStart);
+      RCLCPP_INFO(this->get_logger(), "%s contour complete!", errorStart.c_str());
     }
     
   } else {
     response->success = true;
-    response->poses = toolPaths_.at(contourOrder_.at(contourOrderIndex_));
+    std::shared_ptr<Contour> contour = toolPaths_.at(contourOrder_.at(contourOrderIndex_).second);
+    response->poses = contour.get()->getPath(); // NEED TO ALLOW FOR BACKWARDS PATHS!!
     contourOrderIndex_++;
     RCLCPP_INFO(this->get_logger(), "Next contour retrieved.");
   }
