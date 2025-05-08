@@ -189,11 +189,11 @@ bool MainWindow::toggleCameraFeed(void) {
     // Await responce
     if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
         if (result.get()->success) {
-        RCLCPP_INFO_STREAM(this->get_logger(), "Camera toggled.");
-          success = true;
+            RCLCPP_INFO_STREAM(this->get_logger(), "Camera toggled.");
+            success = true;
 
         } else {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Camera toggle failed.");
+            RCLCPP_WARN_STREAM(this->get_logger(), "Camera toggle failed.");
         }
 
       } else {

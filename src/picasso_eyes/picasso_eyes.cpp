@@ -89,12 +89,12 @@ void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::Sha
   if (capturedImage_.empty()) {
     imageCaptured_ = false;
     response->success = false;
-    RCLCPP_INFO(this->get_logger(), "Captured Image");
+    RCLCPP_INFO(this->get_logger(), "Failed to capture image.");
     
   } else {
     imageCaptured_ = true;
     response->success = true;
-    RCLCPP_INFO(this->get_logger(), "Failed to capture image.");
+    RCLCPP_INFO(this->get_logger(), "Captured Image");
   }
 }
 
@@ -103,12 +103,13 @@ void PicassoEyes::servicePreviewSketch(const std_srvs::srv::Trigger::Request::Sh
   cv::Mat localImage = capturedImage_.clone();
   localImage = generateSketch(localImage, 1, 3, 3, true);
   
-  if (!contourOrder_.empty()) {
-    response->success = true;
-    RCLCPP_INFO(this->get_logger(), "Sketch generated successfully.");
-  } else {
+  if (contourOrder_.empty()) {
     response->success = false;
     RCLCPP_INFO(this->get_logger(), "Failed to generate sketch.");
+    
+  } else {
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "Sketch generated successfully.");
   }
 }
 
@@ -158,6 +159,7 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
   double solveTime = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
 
   contourOrder_ = salesmanSolver_->getTravelOrder();
+  contourOrderIndex_ = 0;
   
   if (contourOrder_.empty()) {
     RCLCPP_WARN(this->get_logger(), "%s empty draw order", errorStart.c_str());
@@ -173,8 +175,25 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
 
 void PicassoEyes::serviceNextContour(const picasso_bot::srv::GetPoseArray::Request::SharedPtr request, 
                                       picasso_bot::srv::GetPoseArray::Response::SharedPtr response) {
-  // TO DO: Make function for same
-  //response->success = true;
+  std::string errorStart = "Cannot get next contour:";
+
+  if (contourOrder_.empty() || contourOrderIndex_ == contourOrder_.size() - 1) {
+    response->success = false;
+    response->poses = geometry_msgs::msg::PoseArray();
+
+    if (contourOrder_.empty()) {
+      RCLCPP_WARN(this->get_logger(), "%s empty draw order", errorStart.c_str());
+
+    } else {
+      RCLCPP_INFO(this->get_logger(), "%s contour complete!", errorStart);
+    }
+    
+  } else {
+    response->success = true;
+    response->poses = contourOrder_.at(contourOrderIndex_);
+    contourOrderIndex_++;
+    RCLCPP_INFO(this->get_logger(), "Next contour retrieved.");
+  }
 }
 
 void PicassoEyes::serviceShutdown(const std_srvs::srv::Trigger::Request::SharedPtr request,
