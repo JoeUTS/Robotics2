@@ -42,19 +42,6 @@ MainWindow::~MainWindow() {
 void MainWindow::startCamera() {
 
     toggleCameraFeed();
-    // Now that I have made a combined launch file, this probs isnt needed sorry.
-    // We now have a camera toggle function at the bottom which can toggle the camera publishing.
-    //- Joseph
-
-    // // Start the picasso_eyes launch file
-    // QString command = "ros2 launch picasso_eyes realsense.launch.py";
-    // QProcess *process = new QProcess(this);
-    // QStringList arguments = command.split(' ', Qt::SkipEmptyParts);
-    // QString program = arguments.takeFirst();
-    // process->start(program, arguments);
-
-    // // Ensure the ROS 2 subscription is active
-    // RCLCPP_INFO(this->get_logger(), "Starting camera and initializing ROS image view...");
 
     // // Find or create the QLabel in the existing layout
     QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
@@ -162,7 +149,10 @@ void MainWindow::previewSketch() {
         RCLCPP_ERROR(node->get_logger(), "Image label not found.");
     }a, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);*/
 
-    cv::Mat sketch = cv::Mat();//code from picassoeyes
+    sensor_msgs::msg::Image sketchMsg = previewSketchServ();
+    cv_bridge::CvImagePtr cvPtr = cv_bridge::toCvCopy(sketchMsg, "mono8");
+    cv::Mat sketch = cvPtr->image;
+
     if (sketch.empty()) {
         RCLCPP_ERROR(this->get_logger(), "No sketch preview available.");
         return;
@@ -184,7 +174,7 @@ bool MainWindow::toggleCameraFeed(void) {
     std::chrono::time_point<std::chrono::system_clock> lastMsg;
     
     // Wait for service
-    while (!servCamerafeed_ ->wait_for_service(std::chrono::milliseconds(200))) {
+    while (!servCamerafeed_->wait_for_service(std::chrono::milliseconds(200))) {
         // Prevent spaming messages
         std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
         std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
@@ -197,24 +187,41 @@ bool MainWindow::toggleCameraFeed(void) {
 
     auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
 
-    auto result = servCamerafeed_->async_send_request(request);
-    bool success = false;
+    auto weak_this = std::weak_ptr<MainWindow>(
+        std::static_pointer_cast<MainWindow>(this->shared_from_this()));
 
-    // Await responce
-    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
-        if (result.get()->success) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Camera toggled.");
-            success = true;
+    servCamerafeed_->async_send_request(
+        request,
+        [weak_this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
+            // Lock the weak_ptr to get a shared_ptr for safe access
+            auto shared_this = weak_this.lock();
+            if (shared_this) {
+                // Call the member function to handle the response
+                shared_this->cameraFeedToggleResponseCallback(future);
+            } else {
+                // The MainWindow object is no longer valid
+                RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service response.");
+            }
+        });
 
-        } else {
-            RCLCPP_WARN_STREAM(this->get_logger(), "Camera toggle failed.");
-        }
+    RCLCPP_INFO_STREAM(this->get_logger(), "Camera toggle service request sent.");
 
+    // The function returns immediately, the response will be handled in the callback
+    return true; // Or indicate that the request was sent successfully
+}
+
+void MainWindow::cameraFeedToggleResponseCallback(
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future)
+{
+    auto result = future.get();
+    if (result->success) {
+        RCLCPP_INFO_STREAM(this->get_logger(), "Camera toggled successfully.");
+        // Update your GUI here based on the success
+        // For example, change a button state or display a message
     } else {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'camera_feed_toggle'");
+        RCLCPP_WARN_STREAM(this->get_logger(), "Camera toggle failed: " << result->message);
+        // Update your GUI to indicate failure
     }
-
-    return success;
 }
 
 void MainWindow::shutdownEyes(void) {

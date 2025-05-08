@@ -71,55 +71,25 @@ rosidl_get_typesupport_target(cpp_typesupport_target
   rosidl_typesupport_cpp
 )
 
-
 # Arm
-set(picasso_arm_dep
-  ament_index_cpp
-  rclcpp
-  sensor_msgs
-  geometry_msgs
-  OpenCV
-  cv_bridge
-  image_transport
-  realsense2
-  realsense2_camera_msgs
-  moveit_ros_planning_interface
-)
-
 set(picasso_arm_src
   src/picasso_arm/arm_main.cpp
   src/picasso_arm/picasso_arm.cpp
-  src/picasso_eyes/Contour.cpp
 )
 
 add_executable(picasso_arm ${picasso_arm_src})
-ament_target_dependencies(picasso_arm ${picasso_arm_dep})
-target_link_libraries(picasso_arm "${cpp_typesupport_target}")
-target_include_directories(picasso_arm PRIVATE
-                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                          $<INSTALL_INTERFACE:include>
-                          ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_arm
-                          ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
-)
-
-# Eyes
-set(picasso_eyes_dep
+ament_target_dependencies(picasso_arm
   ament_index_cpp
   rclcpp
-  sensor_msgs
   geometry_msgs
-  visualization_msgs
-  std_srvs
-  OpenCV
-  cv_bridge
-  image_transport
-  realsense2
-  realsense2_camera_msgs
   tf2
   tf2_ros
   tf2_geometry_msgs
+  moveit_ros_planning_interface
 )
+target_link_libraries(picasso_arm "${cpp_typesupport_target}")
 
+# Eyes
 set(picasso_eyes_src
   src/picasso_eyes/eyes_main.cpp
   src/picasso_eyes/picasso_eyes.cpp
@@ -130,16 +100,34 @@ set(picasso_eyes_src
 )
 
 add_executable(picasso_eyes ${picasso_eyes_src})
-ament_target_dependencies(picasso_eyes ${picasso_eyes_dep})
-target_link_libraries(picasso_eyes "${cpp_typesupport_target}")
-target_include_directories(picasso_eyes PRIVATE
-                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                          $<INSTALL_INTERFACE:include>
-                          ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
+ament_target_dependencies(picasso_eyes
+  ament_index_cpp
+  rclcpp
+  sensor_msgs
+  geometry_msgs
+  visualization_msgs
+  std_srvs
+  OpenCV
+  cv_bridge
+  image_transport
+  realsense2
+  realsense2_camera_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
 )
+target_link_libraries(picasso_eyes "${cpp_typesupport_target}")
 
 # UI
-set(picasso_ui_dep
+set (picasso_ui_src
+  src/picasso_ui/mainwindow.cpp
+  src/picasso_ui/ui_main.cpp
+)
+set(UI_FILES
+  src/picasso_ui/mainwindow.ui
+)
+add_executable(picasso_ui ${picasso_ui_src} ${UI_FILES})
+ament_target_dependencies(picasso_ui 
   ament_index_cpp 
   rclcpp
   std_msgs
@@ -150,35 +138,12 @@ set(picasso_ui_dep
   cv_bridge
   image_transport
   sensor_msgs
-  visualization_msgs
-  realsense2
-  realsense2_camera_msgs
-  tf2
-  tf2_ros
-  tf2_geometry_msgs
 )
-
-set (picasso_ui_src
-  src/picasso_ui/mainwindow.cpp
-  src/picasso_ui/ui_main.cpp
-)
-
-set(UI_FILES
-  src/picasso_ui/mainwindow.ui
-)
-
-add_executable(picasso_ui ${picasso_ui_src} ${UI_FILES})
-ament_target_dependencies(picasso_ui ${picasso_ui_dep})
 target_link_libraries(picasso_ui
   Qt5::Widgets
   Qt5::Multimedia
   Qt5::MultimediaWidgets
   "${cpp_typesupport_target}"
-)
-target_include_directories(picasso_ui PRIVATE
-                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                          $<INSTALL_INTERFACE:include>
-                          ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_ui
 )
 
 # UTesting
@@ -206,10 +171,6 @@ ament_target_dependencies(test_salesman_solver
 target_link_libraries(test_salesman_solver
   gtest_main
   "${cpp_typesupport_target}"
-)
-target_include_directories(test_salesman_solver PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/picasso_eyes
 )
 
 install(TARGETS

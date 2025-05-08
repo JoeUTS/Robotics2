@@ -7,13 +7,13 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include "picasso_eyes.h"
 
 #include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <moveit/move_group_interface/move_group_interface.h>
-#include <geometry_msgs/msg/pose.hpp>
+
 
 #include "picasso_bot/srv/get_pose_array.hpp"
 

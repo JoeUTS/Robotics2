@@ -35,19 +35,14 @@ from launch.actions import (
     OpaqueFunction,
     RegisterEventHandler,
 )
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 from launch.conditions import IfCondition, UnlessCondition
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
-from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
-
 
 def launch_setup(context, *args, **kwargs):
-    
-    # Joseph changes
-
-
     # Initialize Arguments
     ur_type = LaunchConfiguration("ur_type")
     safety_limits = LaunchConfiguration("safety_limits")

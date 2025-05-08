@@ -94,26 +94,6 @@ cv::Mat imageController::msg2Mat(const sensor_msgs::msg::Image &imageMsg) {
     image = cvPtr->image;
   }
 
-  if (imageMsg.encoding == "16UC1" || imageMsg.encoding == "32FC1") {
-    // Depth image.
-    cvPtr = cv_bridge::toCvCopy(imageMsg);
-    image = cvPtr->image;
-    double min, max;
-    cv::minMaxLoc(image, &min, &max);
-    image.convertTo(image, CV_8UC1, 255.0 / max);
-
-  } else if (imageMsg.encoding == "mono8") {
-    // Grayscale image
-    cvPtr = cv_bridge::toCvCopy(imageMsg, "mono8");
-    image = cvPtr->image;
-
-  } else {
-    // Colour image.
-    // NOTE: Camera encoding says RGB but is actually BGR.
-    cvPtr = cv_bridge::toCvCopy(imageMsg, "bgr8");
-    image = cvPtr->image;
-  }
-
   return image;
 }
 

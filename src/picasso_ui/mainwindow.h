@@ -17,19 +17,20 @@
 #include <QObject>
 
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <ros_image_to_qimage/ros_image_to_qimage.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
-#include <picasso_bot/srv/get_image.hpp>
+#include "picasso_bot/srv/get_image.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow, public rclcpp::Node  // In ROS node should be inherrited.
+class MainWindow : public QMainWindow, public rclcpp::Node
 {
     Q_OBJECT
 
@@ -57,8 +58,8 @@ private:
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr estop_publisher;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscriber;
 
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCamerafeed_;  // Added service to toggle camera feed - Joseph
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEyesShutdown_; // Added service to shutdown picasso eyes - Joseph.
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCamerafeed_;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEyesShutdown_;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;
     rclcpp::Client<picasso_bot::srv::GetImage>::SharedPtr servPreviewSketch_;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;
@@ -66,10 +67,9 @@ private:
     
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
-    // Run this function to set the camera feed to given state - Joseph
     bool toggleCameraFeed(void);
+    void cameraFeedToggleResponseCallback(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future);
 
-    // Run this function to shutdown eyes - Joseph
     void shutdownEyes(void);
 
     bool captureImageServ(void);
