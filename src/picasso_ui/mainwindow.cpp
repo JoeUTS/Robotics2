@@ -36,21 +36,23 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::startCamera() {
+
+    toggleCameraFeed();
     // Now that I have made a combined launch file, this probs isnt needed sorry.
     // We now have a camera toggle function at the bottom which can toggle the camera publishing.
     //- Joseph
 
-    // Start the picasso_eyes launch file
-    QString command = "ros2 launch picasso_eyes realsense.launch.py";
-    QProcess *process = new QProcess(this);
-    QStringList arguments = command.split(' ', Qt::SkipEmptyParts);
-    QString program = arguments.takeFirst();
-    process->start(program, arguments);
+    // // Start the picasso_eyes launch file
+    // QString command = "ros2 launch picasso_eyes realsense.launch.py";
+    // QProcess *process = new QProcess(this);
+    // QStringList arguments = command.split(' ', Qt::SkipEmptyParts);
+    // QString program = arguments.takeFirst();
+    // process->start(program, arguments);
 
-    // Ensure the ROS 2 subscription is active
-    RCLCPP_INFO(this->get_logger(), "Starting camera and initializing ROS image view...");
+    // // Ensure the ROS 2 subscription is active
+    // RCLCPP_INFO(this->get_logger(), "Starting camera and initializing ROS image view...");
 
-    // Find or create the QLabel in the existing layout
+    // // Find or create the QLabel in the existing layout
     QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
 
     if (!imageLabel) {
@@ -69,7 +71,7 @@ void MainWindow::startCamera() {
     }
 
     // Display a message indicating the camera has started
-    RCLCPP_INFO(this->get_logger(), "Camera started. Waiting for images...");
+    RCLCPP_INFO(this->get_logger(), "Camera started. Waiting for images..."); 
 }
 
 void MainWindow::connectUR3() {
@@ -105,7 +107,7 @@ void MainWindow::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
     try {
         // Convert ROS 2 Image message to OpenCV image
-        cv::Mat image = cv_bridge::toCvCopy(msg, "bgr8")->image;
+       cv::Mat image = cv_bridge::toCvCopy(msg, "bgr8")->image; //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% change this placeholder
 
         // Convert OpenCV image to QImage
         QImage qImage(image.data, image.cols, image.rows, image.step, QImage::Format_BGR888);
@@ -140,29 +142,37 @@ void MainWindow::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 
 void MainWindow::previewSketch() {
     /*
-    // Ensure the PicassoEyes node is initialized
-    if (!picassoEyesNode) {
-        RCLCPP_ERROR(node->get_logger(), "PicassoEyes node is not initialized.");
-        return;
-    }
-
-    // Use a public function in PicassoEyes to retrieve the processed image
-    cv::Mat sketch = picassoEyesNode->getSketchPreview();  // Hypothetical public function in PicassoEyes
-
     if (sketch.empty()) {
         RCLCPP_ERROR(node->get_logger(), "No sketch preview available.");
         return;
     }
 
     // Convert the sketch to QImage and display it in the QLabel
-    QImage qSketch(sketch.data, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);
+    QImage qSketch(sketch.dat    QImage qSketch(sketch.data, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);
     QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
+
+ 
     if (imageLabel) {
         imageLabel->setPixmap(QPixmap::fromImage(qSketch));
     } else {
         RCLCPP_ERROR(node->get_logger(), "Image label not found.");
+    }a, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);*/
+
+    cv::Mat sketch = ;//code from picassoeyes
+    if (sketch.empty()) {
+        RCLCPP_ERROR(this->get_logger(), "No sketch preview available.");
+        return;
     }
-    */
+
+    QImage qSketch(sketch.data, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);
+    QLabel *sketchLabel = ui->previewSketch->findChild<QLabel *>("sketchLabel");
+
+    if (sketchLabel) {
+        sketchLabel->setPixmap(QPixmap::fromImage(qSketch));
+    } else {
+        RCLCPP_ERROR(this->get_logger(), "Image label not found.");
+    }
+    
 }
 
 bool MainWindow::toggleCameraFeed(void) {

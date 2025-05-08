@@ -180,7 +180,7 @@ install(TARGETS
 install(
   DIRECTORY
   config
-  local # Comment out if causing build issues
+ # local # Comment out if causing build issues
   launch
   rviz
   worlds
