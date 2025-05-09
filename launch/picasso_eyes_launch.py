@@ -21,14 +21,12 @@ def generate_launch_description():
       'config_test_picasso_eyes.rviz'
     ])
 
-    
     declare_use_rviz = DeclareLaunchArgument(
-      'use_rviz',
+      'launch_rviz',
       default_value="true",
       description='Whether to open rviz'
     )
-
-    use_rviz = LaunchConfiguration('use_rviz')
+    launch_rviz = LaunchConfiguration('launch_rviz')
   
     # nodes
     picasso_eyes = Node(
@@ -41,7 +39,7 @@ def generate_launch_description():
 
     rviz_node = Node(
       package="rviz2",
-      condition=IfCondition(use_rviz),
+      condition=IfCondition(launch_rviz),
       executable="rviz2",
       name="rviz2",
       output="screen",
@@ -79,7 +77,6 @@ def generate_launch_description():
     ld.add_action(declare_use_rviz)
     ld.add_action(realsense_camera)
     ld.add_action(delayed_start_picasso_eyes)
-
 
     return ld
 

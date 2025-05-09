@@ -35,7 +35,7 @@ class MainWindow : public QMainWindow, public rclcpp::Node
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
@@ -44,6 +44,7 @@ private slots:
     void captureImage();
     void sendEmergencyStop();
     void previewSketch();
+    void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
     
 
  //   void on_widget_customContextMenuRequested(const QPoint &pos);
@@ -53,6 +54,8 @@ private:
    // QCamera *camera;
     QVideoWidget *viewfinder;
     QCameraImageCapture *imageCapture;
+    QLabel *imageLabel_;
+    bool processingImage_;
 
     // ROS 2
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr estop_publisher;
@@ -65,7 +68,7 @@ private:
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_; 
     
-    void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
+    
 
     bool toggleCameraFeed(void);
     void cameraFeedToggleResponseCallback(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future);

@@ -17,8 +17,25 @@ imageController::imageController(std::shared_ptr<rclcpp::Node> parentNode, const
 sensor_msgs::msg::Image imageController::updateCameraImage(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
   std::unique_lock<std::mutex> lck(mutex_);
   lastCameraMsg_ = *incomingMsg;
-  sensor_msgs::msg::Image cameraImage = lastCameraMsg_.rgb;
   lck.unlock();
+
+  sensor_msgs::msg::Image cameraImage;
+  cameraImage.height = std::max(incomingMsg->rgb.height, incomingMsg->rgb_camera_info.height);
+  cameraImage.width = std::max(incomingMsg->rgb.width, incomingMsg->rgb_camera_info.width);
+  cameraImage.encoding = incomingMsg->rgb.encoding;
+  cameraImage.is_bigendian = incomingMsg->rgb.is_bigendian;
+  cameraImage.step = incomingMsg->rgb.step;
+  cameraImage.data = incomingMsg->rgb.data;
+  cameraImage.header = incomingMsg->rgb.header;
+  
+  // Set default height and width if not set.
+  if (cameraImage.height == 0 && incomingMsg->rgb.data.size() > 0) {
+    cameraImage.height = 480;
+  }
+
+  if (cameraImage.width == 0 && incomingMsg->rgb.data.size() > 0) {
+    cameraImage.width = 640;
+  }
 
   return cameraImage;
 }

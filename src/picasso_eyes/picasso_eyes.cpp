@@ -57,7 +57,7 @@ void PicassoEyes::callbackCameraReceive(const realsense2_camera_msgs::msg::RGBD:
         publishedImage = cameraImage;
       }
 
-      compressImage(publishedImage, pubCompressQuality_);
+      //compressImage(publishedImage, pubCompressQuality_);
       pubCameraImage_->publish(publishedImage);
     }
   }

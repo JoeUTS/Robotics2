@@ -7,12 +7,34 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    imageLabel_ = new QLabel(ui->viewfinderPlaceholder);
+    imageLabel_->setObjectName("imageLabel"); // Assign an object name for potential findChild calls elsewhere if needed
+    imageLabel_->setScaledContents(true);
+
+    QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(ui->viewfinderPlaceholder->layout());
+    if (!layout) {
+        layout = new QVBoxLayout(ui->viewfinderPlaceholder);
+        ui->viewfinderPlaceholder->setLayout(layout);
+    }
+    layout->addWidget(imageLabel_);
+
+    processingImage_ = false;
+
+    // Connect button
+    connect(ui->startCamera, &QPushButton::clicked, this, &MainWindow::startCamera);
+    connect(ui->captureImage, &QPushButton::clicked, this, &MainWindow::captureImage);
+    connect(ui->connectUR3, &QPushButton::clicked, this, &MainWindow::connectUR3);
+    connect(ui->previewSketch, &QPushButton::clicked, this, &MainWindow::previewSketch);
+    // connect(ui->eStopButton, &QPushButton::clicked, this, &MainWindow::sendEmergencyStop);
+
     // Initialize ROS 2
+    /*
     if (!rclcpp::ok()) {
         int argc = 0;
         char **argv = nullptr;
         rclcpp::init(argc, argv);
     }
+    */
 
     // Create a node and publishers
     image_subscriber = this->create_subscription<sensor_msgs::msg::Image>(
@@ -25,43 +47,20 @@ MainWindow::MainWindow(QWidget *parent)
     servPreviewSketch_ = this->create_client<picasso_bot::srv::GetImage>("/preview_sketch");
     servDiscardImage_ = this->create_client<std_srvs::srv::Trigger>("/discard_image");
     servGenerateToolpath_ = this->create_client<std_srvs::srv::Trigger>("/generate_toolpath"); 
-
-    // Connect button
-    connect(ui->startCamera, &QPushButton::clicked, this, &MainWindow::startCamera);
-    connect(ui->captureImage, &QPushButton::clicked, this, &MainWindow::captureImage);
-    connect(ui->connectUR3, &QPushButton::clicked, this, &MainWindow::connectUR3);
-    connect(ui->previewSketch, &QPushButton::clicked, this, &MainWindow::previewSketch);
-    // connect(ui->eStopButton, &QPushButton::clicked, this, &MainWindow::sendEmergencyStop);
 }
 
 MainWindow::~MainWindow() {
     shutdownEyes();
-    rclcpp::shutdown(); // Make sure this is the last command in the destructor - Joseph
+    delete ui;
+    rclcpp::shutdown();
 }
 
 void MainWindow::startCamera() {
 
     toggleCameraFeed();
 
-    // // Find or create the QLabel in the existing layout
-    QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
+    // Code moved to constructor to set QLabel as a member variable - Joseph
 
-    if (!imageLabel) {
-        // If QLabel doesn't exist, create it and add it to the layout
-        imageLabel = new QLabel(ui->viewfinderPlaceholder);
-        imageLabel->setObjectName("imageLabel");
-        imageLabel->setScaledContents(true); // Scale the image to fit the label
-
-        // Add QLabel to the existing layout
-        QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(ui->viewfinderPlaceholder->layout());
-        if (!layout) {
-            layout = new QVBoxLayout(ui->viewfinderPlaceholder);
-            ui->viewfinderPlaceholder->setLayout(layout);
-        }
-        layout->addWidget(imageLabel);
-    }
-
-    // Display a message indicating the camera has started
     RCLCPP_INFO(this->get_logger(), "Camera started. Waiting for images..."); 
 }
 
@@ -73,18 +72,8 @@ void MainWindow::connectUR3() {
 
 
 void MainWindow::captureImage() {
-    // Get the current image from the QLabel
-    QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
-    if (imageLabel) {
-        QPixmap pixmap = *(imageLabel->pixmap());
-        if (!pixmap.isNull()) {
-            // Save the image to a file
-            QString filePath = QFileDialog::getSaveFileName(this, "Save Image", QDir::homePath(), "Images (*.jpg *.png *.bmp)");
-            if (!filePath.isEmpty()) {
-                pixmap.toImage().save(filePath);
-            }
-        }
-    }
+    // Changed to use eyes service, no need to save image - Joseph
+    captureImageServ();
 }
 
 void MainWindow::sendEmergencyStop() {
@@ -96,39 +85,28 @@ void MainWindow::sendEmergencyStop() {
 
 void MainWindow::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
-    try {
-        // Convert ROS 2 Image message to OpenCV image
-       cv::Mat image = cv_bridge::toCvCopy(msg, "bgr8")->image; //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% change this placeholder
-
-        // Convert OpenCV image to QImage
-        QImage qImage(image.data, image.cols, image.rows, image.step, QImage::Format_BGR888);
-
-        // Use QMetaObject::invokeMethod to update the GUI in the main thread
-        QMetaObject::invokeMethod(this, [this, qImage]() {
-            // Find or create the QLabel in the existing layout
-            QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
-
-            if (!imageLabel) {
-                // If QLabel doesn't exist, create it and add it to the layout
-                imageLabel = new QLabel(ui->viewfinderPlaceholder);
-                imageLabel->setObjectName("imageLabel");
-                imageLabel->setScaledContents(true); // Scale the image to fit the label
-
-                // Add QLabel to the existing layout
-                QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(ui->viewfinderPlaceholder->layout());
-                if (!layout) {
-                    layout = new QVBoxLayout(ui->viewfinderPlaceholder);
-                    ui->viewfinderPlaceholder->setLayout(layout);
-                }
-                layout->addWidget(imageLabel);
-            }
-
-            // Update the QLabel with the new image
-            imageLabel->setPixmap(QPixmap::fromImage(qImage));
-        });
-    } catch (const cv_bridge::Exception &e) {
-        RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
+    // Changed to simplify, fix dangling pointer and use QLabel member variable - Joseph
+    if (msg->width == 0 && msg->height == 0) {
+        return;
     }
+
+    cv::Mat image = cv_bridge::toCvCopy(msg, "bgr8")->image;
+    QImage tempQImage(image.data, image.cols, image.rows, image.step, QImage::Format_BGR888);
+    QImage safeQImage = tempQImage.copy();
+
+    auto weak_ptr_this = std::weak_ptr<MainWindow>(
+            std::static_pointer_cast<MainWindow>(this->shared_from_this()));
+
+    QMetaObject::invokeMethod(this, [weak_ptr_this, qImage = std::move(safeQImage)]() {
+        auto shared_this = weak_ptr_this.lock();
+
+        if (!shared_this) {
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot update imageLabel_.");
+            rclcpp::shutdown();
+        }
+
+        shared_this->imageLabel_->setPixmap(QPixmap::fromImage(qImage));
+    });
 }
 
 void MainWindow::previewSketch() {
