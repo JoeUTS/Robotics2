@@ -41,23 +41,23 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
 }
 
 void PicassoEyes::callbackCameraReceive(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
-  if (cameraFeedEnabled_) { // Camera feed toggle.
+  if (imageController_ == NULL) { // First image received.
+    imageController_ = std::make_shared<imageController>(this->shared_from_this(), incomingMsg);
+    
+  } else {
+    sensor_msgs::msg::Image cameraImage = imageController_->updateCameraImage(incomingMsg);
 
-    if (imageController_ == NULL) { // First image received.
-      imageController_ = std::make_shared<imageController>(this->shared_from_this(), incomingMsg);
-      
-    } else {
-      sensor_msgs::msg::Image cameraImage = imageController_->updateCameraImage(incomingMsg);
+    if (cameraFeedEnabled_) { // Camera feed toggle.
       sensor_msgs::msg::Image publishedImage;
 
-      if (imageCaptured_) { // Image captured.
+      if (imageCaptured_) {
         publishedImage = capturedImageMsg_;
 
       } else {
         publishedImage = cameraImage;
       }
 
-      //compressImage(publishedImage, pubCompressQuality_);
+      compressImage(publishedImage, pubCompressQuality_);
       pubCameraImage_->publish(publishedImage);
     }
   }
@@ -74,10 +74,17 @@ void PicassoEyes::serviceToggleCameraFeed(const std_srvs::srv::Trigger::Request:
 void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::SharedPtr request,
                                       std_srvs::srv::Trigger::Response::SharedPtr response) {
   // Image capture
+  if (imageController_ == NULL) {
+    RCLCPP_ERROR(this->get_logger(), "imageController is not initialized. Has a camera image been received yet?");
+    response->success = false;
+    return;
+  }
+
   capturedImageMsg_ = imageController_->getStoredImage().rgb;
   capturedImage_ = imageController_->msg2Mat(capturedImageMsg_);
   
   // Mask generation
+  /*
   if (!maskGenerationActive_) {
     maskGenerationActive_ = true;
     maskThread_ =  std::unique_ptr<std::thread>(new std::thread(&imageController::generateMask, imageController_, capturedImage_));
@@ -85,6 +92,7 @@ void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::Sha
   } else {
     RCLCPP_WARN(this->get_logger(), "Cannot generate mask: Mask Generation already active.");
   }
+  */
 
   if (capturedImage_.empty()) {
     imageCaptured_ = false;
@@ -103,17 +111,18 @@ void PicassoEyes::servicePreviewSketch(const picasso_bot::srv::GetImage::Request
   cv::Mat localImage = capturedImage_.clone();
   localImage = generateSketch(localImage, 1, 3, 3);
   
-  if (contourOrder_.empty()) {
+  if (localImage.empty()) {
     response->success = false;
     RCLCPP_INFO(this->get_logger(), "Failed to generate sketch.");
     
   } else {
     // convert to image msg
-    std_msgs::msg::Header header;
-    cv_bridge::CvImage img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, localImage);
+    cv_bridge::CvImage imgBridge = cv_bridge::CvImage(std_msgs::msg::Header(), 
+                                                      sensor_msgs::image_encodings::MONO8, 
+                                                      localImage);
     
     // Send responce
-    img_bridge.toImageMsg(response->image);
+    imgBridge.toImageMsg(response->image);
     response->success = true;
     RCLCPP_INFO(this->get_logger(), "Sketch generated successfully.");
   }

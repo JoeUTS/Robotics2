@@ -8,7 +8,7 @@
 #include <rclcpp/logger.hpp>
 #include <geometry_msgs/msg/point.hpp>
 
-#include "Contour.h"
+#include "../common/Contour.h"
 
 class SalesmanSolver { // doesnt need to be its own node - Joseph
 public:

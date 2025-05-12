@@ -1,4 +1,4 @@
-#include "../src/picasso_eyes/salesman_solver.h"
+#include "../src/salesman_solver/salesman_solver.h"
 #include <opencv2/opencv.hpp>
 #include <gtest/gtest.h>
 #include <memory>

@@ -5,6 +5,7 @@ imageController::imageController(std::shared_ptr<rclcpp::Node> parentNode, const
   colourIndex_ = 0;
   
   // Load YOLO model.
+  /*
   std::string packageShareDir = ament_index_cpp::get_package_share_directory("picasso_bot");
 
   std::string pathImageClasses = packageShareDir + "/config/coco-classes.txt";
@@ -12,6 +13,7 @@ imageController::imageController(std::shared_ptr<rclcpp::Node> parentNode, const
 
   std::string pathYOLO = packageShareDir + "/local/yolov5s-seg.onnx";
   load_net(pathYOLO);
+  */
 }
 
 sensor_msgs::msg::Image imageController::updateCameraImage(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
@@ -205,7 +207,6 @@ void imageController::generateArt(void) {
 
   // Return on empty msg.
   if (imageRGB.empty()) {
-    //detectionRunning_ = false;
     return;
   }
   
@@ -224,8 +225,6 @@ void imageController::generateArt(void) {
   std::vector<cv::Vec4i> hierarchy;
   cv::findContours(edges, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
   cv::drawContours(imageRGB, contours, -1, cv::Scalar(0, 0, 255));
-  
-  //detectionRunning_ = false;
 }
 
 

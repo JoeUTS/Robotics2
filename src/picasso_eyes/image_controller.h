@@ -30,7 +30,7 @@
 #include <image_transport/image_transport.hpp>  // Using image_transport allows us to publish and subscribe to compressed image streams in ROS2
 #include <cv_bridge/cv_bridge.h>
 
-#include "Contour.h"
+#include "../common/Contour.h"
 
 struct DetectedObject {
   int class_id;

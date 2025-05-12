@@ -93,10 +93,10 @@ target_link_libraries(picasso_arm "${cpp_typesupport_target}")
 set(picasso_eyes_src
   src/picasso_eyes/eyes_main.cpp
   src/picasso_eyes/picasso_eyes.cpp
-  src/picasso_eyes/Contour.cpp
   src/picasso_eyes/image_controller.cpp
-  src/picasso_eyes/salesman_solver.cpp
   src/picasso_eyes/VisulisationSettings.cpp
+  src/common/Contour.cpp
+  src/salesman_solver/salesman_solver.cpp
 )
 
 add_executable(picasso_eyes ${picasso_eyes_src})
@@ -150,8 +150,8 @@ target_link_libraries(picasso_ui
 find_package(ament_cmake_gtest REQUIRED)
 ament_add_gtest(test_salesman_solver
   tests/test_salesman_solver.cpp
-  src/picasso_eyes/salesman_solver.cpp
-  src/picasso_eyes/Contour.cpp
+  src/salesman_solver/salesman_solver.cpp
+  src/common/Contour.cpp
 )
 ament_target_dependencies(test_salesman_solver
   rclcpp
@@ -183,7 +183,7 @@ install(TARGETS
 install(
   DIRECTORY
   config
-  local # Comment out if causing build issues
+  #local # Comment out if causing build issues
   launch
   rviz
   worlds

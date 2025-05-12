@@ -5,38 +5,43 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), Node("picaso_ui"), ui(new Ui::MainWindow)
 {
+    // Qt
+    // widgets dont scale with window size + too small for containing words
     ui->setupUi(this);
 
     imageLabel_ = new QLabel(ui->viewfinderPlaceholder);
-    imageLabel_->setObjectName("imageLabel"); // Assign an object name for potential findChild calls elsewhere if needed
+    imageLabel_->setObjectName("imageLabel");
     imageLabel_->setScaledContents(true);
-
-    QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(ui->viewfinderPlaceholder->layout());
-    if (!layout) {
-        layout = new QVBoxLayout(ui->viewfinderPlaceholder);
-        ui->viewfinderPlaceholder->setLayout(layout);
+    
+    QVBoxLayout *layoutImage = qobject_cast<QVBoxLayout *>(ui->viewfinderPlaceholder->layout());
+    if (!layoutImage) {
+        layoutImage = new QVBoxLayout(ui->viewfinderPlaceholder);
+        ui->viewfinderPlaceholder->setLayout(layoutImage);
     }
-    layout->addWidget(imageLabel_);
+    layoutImage->addWidget(imageLabel_);
 
-    processingImage_ = false;
+    sketchLabel_ = new QLabel(ui->viewfinderPlaceholder_2);
+    sketchLabel_->setObjectName("sketchLabel");
+    sketchLabel_->setScaledContents(true);
 
-    // Connect button
+    QVBoxLayout *layoutSketch = qobject_cast<QVBoxLayout *>(ui->viewfinderPlaceholder_2->layout());
+    if (!layoutSketch) {
+        layoutSketch = new QVBoxLayout(ui->viewfinderPlaceholder_2);
+        ui->viewfinderPlaceholder_2->setLayout(layoutSketch);
+    }
+    layoutSketch->addWidget(sketchLabel_);
+
     connect(ui->startCamera, &QPushButton::clicked, this, &MainWindow::startCamera);
     connect(ui->captureImage, &QPushButton::clicked, this, &MainWindow::captureImage);
     connect(ui->connectUR3, &QPushButton::clicked, this, &MainWindow::connectUR3);
     connect(ui->previewSketch, &QPushButton::clicked, this, &MainWindow::previewSketch);
     // connect(ui->eStopButton, &QPushButton::clicked, this, &MainWindow::sendEmergencyStop);
 
-    // Initialize ROS 2
-    /*
-    if (!rclcpp::ok()) {
-        int argc = 0;
-        char **argv = nullptr;
-        rclcpp::init(argc, argv);
-    }
-    */
 
-    // Create a node and publishers
+    // ROS
+    eyesShutdownComplete_ = false;
+    sketchMsg_ = sensor_msgs::msg::Image();
+
     image_subscriber = this->create_subscription<sensor_msgs::msg::Image>(
         "/processed_camera_image", 10,
         std::bind(&MainWindow::imageCallback, this, std::placeholders::_1));
@@ -45,19 +50,30 @@ MainWindow::MainWindow(QWidget *parent)
     servEyesShutdown_ = this->create_client<std_srvs::srv::Trigger>("/shutdown_node");
     servCaptureImage_ = this->create_client<std_srvs::srv::Trigger>("/capture_image");
     servPreviewSketch_ = this->create_client<picasso_bot::srv::GetImage>("/preview_sketch");
-    servDiscardImage_ = this->create_client<std_srvs::srv::Trigger>("/discard_image");
-    servGenerateToolpath_ = this->create_client<std_srvs::srv::Trigger>("/generate_toolpath"); 
+    servDiscardImage_ = this->create_client<std_srvs::srv::Trigger>("/discard_image");          // TO DO: add button
+    servGenerateToolpath_ = this->create_client<std_srvs::srv::Trigger>("/generate_toolpath");  // TO DO: add button
 }
 
 MainWindow::~MainWindow() {
-    shutdownEyes();
-    delete ui;
+    // Shutdown eyes module
+    serviceShutdownEyesRequest();
+    while (!eyesShutdownComplete_) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    // Shutdown arm module
+    // TO DO
+
     rclcpp::shutdown();
+
+    delete ui;
 }
+
 
 void MainWindow::startCamera() {
 
-    toggleCameraFeed();
+    //serv_toggleCameraRequest();
+    serviceRequest<std_srvs::srv::Trigger>(servCamerafeed_, this->shared_from_this());
 
     // Code moved to constructor to set QLabel as a member variable - Joseph
 
@@ -73,7 +89,7 @@ void MainWindow::connectUR3() {
 
 void MainWindow::captureImage() {
     // Changed to use eyes service, no need to save image - Joseph
-    captureImageServ();
+    serviceRequest<std_srvs::srv::Trigger>(servCaptureImage_, this->shared_from_this());
 }
 
 void MainWindow::sendEmergencyStop() {
@@ -92,7 +108,7 @@ void MainWindow::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 
     cv::Mat image = cv_bridge::toCvCopy(msg, "bgr8")->image;
     QImage tempQImage(image.data, image.cols, image.rows, image.step, QImage::Format_BGR888);
-    QImage safeQImage = tempQImage.copy();
+    QImage safeQImage = tempQImage.copy();  // Need to have a copy to avoid dangling pointer
 
     auto weak_ptr_this = std::weak_ptr<MainWindow>(
             std::static_pointer_cast<MainWindow>(this->shared_from_this()));
@@ -110,25 +126,14 @@ void MainWindow::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 }
 
 void MainWindow::previewSketch() {
-    /*
-    if (sketch.empty()) {
-        RCLCPP_ERROR(node->get_logger(), "No sketch preview available.");
-        return;
+    // CHanged to fix dangling pointer and use QLabel member variable - Joseph
+    serviceSketchRequest();
+
+    while (sketchMsg_ == sensor_msgs::msg::Image()) {   // Wait for sketch to be received
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    // Convert the sketch to QImage and display it in the QLabel
-    QImage qSketch(sketch.dat    QImage qSketch(sketch.data, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);
-    QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
-
- 
-    if (imageLabel) {
-        imageLabel->setPixmap(QPixmap::fromImage(qSketch));
-    } else {
-        RCLCPP_ERROR(node->get_logger(), "Image label not found.");
-    }a, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);*/
-
-    sensor_msgs::msg::Image sketchMsg = previewSketchServ();
-    cv_bridge::CvImagePtr cvPtr = cv_bridge::toCvCopy(sketchMsg, "mono8");
+    cv_bridge::CvImagePtr cvPtr = cv_bridge::toCvCopy(sketchMsg_, "mono8");
     cv::Mat sketch = cvPtr->image;
 
     if (sketch.empty()) {
@@ -136,243 +141,90 @@ void MainWindow::previewSketch() {
         return;
     }
 
-    QImage qSketch(sketch.data, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);
-    QLabel *sketchLabel = ui->previewSketch->findChild<QLabel *>("sketchLabel");
+    QImage tempQSketch(sketch.data, sketch.cols, sketch.rows, sketch.step, QImage::Format_Grayscale8);
+    QImage safeQSketch = tempQSketch.copy();
 
-    if (sketchLabel) {
-        sketchLabel->setPixmap(QPixmap::fromImage(qSketch));
-    } else {
-        RCLCPP_ERROR(this->get_logger(), "Image label not found.");
-    }
-    
+    auto weakThis = std::weak_ptr<MainWindow>(
+            std::static_pointer_cast<MainWindow>(this->shared_from_this()));
+
+    QMetaObject::invokeMethod(this, [weakThis, qImage = std::move(safeQSketch)]() {
+        auto sharedThis = weakThis.lock();
+
+        if (!sharedThis) {
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot update sketchLabel_.");
+            rclcpp::shutdown();
+        }
+
+        sharedThis->sketchLabel_->setPixmap(QPixmap::fromImage(qImage));
+    });
 }
 
-bool MainWindow::toggleCameraFeed(void) {
-    auto messagePeriod = std::chrono::milliseconds(1000);
-    std::chrono::time_point<std::chrono::system_clock> lastMsg;
-    
-    // Wait for service
-    while (!servCamerafeed_->wait_for_service(std::chrono::milliseconds(200))) {
-        // Prevent spaming messages
-        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        
-        if (timeSinceLastMsg >= messagePeriod) {
-            lastMsg = std::chrono::system_clock::now();
-            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'camera_feed_toggle' to connect");
-        }
-    }
+void MainWindow::serviceSketchRequest(void) {
+    serviceWait<picasso_bot::srv::GetImage>(servPreviewSketch_);
 
-    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+    sketchMsg_ = sensor_msgs::msg::Image();
 
+    auto request = std::make_shared<picasso_bot::srv::GetImage::Request>();
     auto weak_this = std::weak_ptr<MainWindow>(
         std::static_pointer_cast<MainWindow>(this->shared_from_this()));
 
-    servCamerafeed_->async_send_request(
-        request,
-        [weak_this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
-            // Lock the weak_ptr to get a shared_ptr for safe access
-            auto shared_this = weak_this.lock();
-            if (shared_this) {
-                // Call the member function to handle the response
-                shared_this->cameraFeedToggleResponseCallback(future);
-            } else {
-                // The MainWindow object is no longer valid
-                RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service response.");
-            }
-        });
+    servPreviewSketch_->async_send_request(request,
+        [weak_this, this](rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future) {
 
-    RCLCPP_INFO_STREAM(this->get_logger(), "Camera toggle service request sent.");
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            shared_this->serviceSketchRespose(future);
 
-    // The function returns immediately, the response will be handled in the callback
-    return true; // Or indicate that the request was sent successfully
+        } else {
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", std::string(servPreviewSketch_->get_service_name()));
+        }
+    });
+
+    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servPreviewSketch_->get_service_name()));
 }
 
-void MainWindow::cameraFeedToggleResponseCallback(
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future)
-{
+void MainWindow::serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future) {
     auto result = future.get();
     if (result->success) {
-        RCLCPP_INFO_STREAM(this->get_logger(), "Camera toggled successfully.");
-        // Update your GUI here based on the success
-        // For example, change a button state or display a message
+        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", std::string(servPreviewSketch_->get_service_name()));
+        sketchMsg_ = result->image;
+
     } else {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Camera toggle failed: " << result->message);
-        // Update your GUI to indicate failure
+        RCLCPP_WARN(this->get_logger(), "Service '%s' failed.", std::string(servPreviewSketch_->get_service_name()));
     }
 }
 
-void MainWindow::shutdownEyes(void) {
-    auto messagePeriod = std::chrono::milliseconds(1000);
-    std::chrono::time_point<std::chrono::system_clock> lastMsg;
+void MainWindow::serviceShutdownEyesRequest(void) {
+    serviceWait<std_srvs::srv::Trigger>(servEyesShutdown_);
     
-    // Wait for service
-    while (!servEyesShutdown_ ->wait_for_service(std::chrono::milliseconds(200))) {
-        // Prevent spaming messages
-        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        
-        if (timeSinceLastMsg >= messagePeriod) {
-            lastMsg = std::chrono::system_clock::now();
-            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'shutdown_node' to connect");
-        }
-    }
+    eyesShutdownComplete_ = false;
 
     auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+    auto weak_this = std::weak_ptr<MainWindow>(
+        std::static_pointer_cast<MainWindow>(this->shared_from_this()));
 
-    auto result = servEyesShutdown_->async_send_request(request);
-    bool success = result.get()->success;
-}
-
-bool MainWindow::captureImageServ(void) {
-    auto messagePeriod = std::chrono::milliseconds(1000);
-    std::chrono::time_point<std::chrono::system_clock> lastMsg;
-    
-    // Wait for service
-    while (!servCaptureImage_ ->wait_for_service(std::chrono::milliseconds(200))) {
-        // Prevent spaming messages
-        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        
-        if (timeSinceLastMsg >= messagePeriod) {
-            lastMsg = std::chrono::system_clock::now();
-            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'capture_image' to connect");
-        }
-    }
-
-    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
-
-    auto result = servCaptureImage_->async_send_request(request);
-    bool success = false;
-
-    // Await responce
-    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
-        if (result.get()->success) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Image capturesd.");
-            success = true;
+    servEyesShutdown_->async_send_request(request,
+        [weak_this, this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
+            
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            shared_this->serviceShutdownEyesRespose(future);
 
         } else {
-            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to capture image.");
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", std::string(servEyesShutdown_->get_service_name()));
         }
+    });
 
-    } else {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'capture_image'");
-    }
-
-    return success;
-}
-    
-bool MainWindow::discardImage(void) {
-    auto messagePeriod = std::chrono::milliseconds(1000);
-    std::chrono::time_point<std::chrono::system_clock> lastMsg;
-    
-    // Wait for service
-    while (!servDiscardImage_ ->wait_for_service(std::chrono::milliseconds(200))) {
-        // Prevent spaming messages
-        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        
-        if (timeSinceLastMsg >= messagePeriod) {
-            lastMsg = std::chrono::system_clock::now();
-            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'discard_image' to connect");
-        }
-    }
-
-    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
-    auto result = servDiscardImage_->async_send_request(request);
-    bool success = false;
-
-    // Await responce
-    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
-        if (result.get()->success) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Image capturesd.");
-            success = true;
-
-        } else {
-            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to capture image.");
-        }
-
-    } else {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'discard_image'");
-    }
-
-    return success;
+    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servEyesShutdown_->get_service_name()));
 }
 
-bool MainWindow::generateToolpath(void) {
-    auto messagePeriod = std::chrono::milliseconds(1000);
-    std::chrono::time_point<std::chrono::system_clock> lastMsg;
-    
-    // Wait for service
-    while (!servGenerateToolpath_ ->wait_for_service(std::chrono::milliseconds(200))) {
-        // Prevent spaming messages
-        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        
-        if (timeSinceLastMsg >= messagePeriod) {
-            lastMsg = std::chrono::system_clock::now();
-            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'capture_image' to connect");
-        }
-    }
-
-    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
-
-    auto result = servGenerateToolpath_->async_send_request(request);
-    bool success = false;
-
-    // Await responce
-    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
-        if (result.get()->success) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Image capturesd.");
-            success = true;
-
-        } else {
-            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to capture image.");
-        }
+void MainWindow::serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
+    auto result = future.get();
+    if (result->success) {
+        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", std::string(servEyesShutdown_->get_service_name()));
+        eyesShutdownComplete_ = true;
 
     } else {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'capture_image'");
+        RCLCPP_WARN(this->get_logger(), "Service '%s' failed: %s", std::string(servEyesShutdown_->get_service_name()), result->message);
     }
-
-    return success;
-}
-
-sensor_msgs::msg::Image MainWindow::previewSketchServ(void) {
-    auto messagePeriod = std::chrono::milliseconds(1000);
-    std::chrono::time_point<std::chrono::system_clock> lastMsg;
-    
-    // Wait for service
-    while (!servPreviewSketch_->wait_for_service(std::chrono::milliseconds(200))) {
-        // Prevent spaming messages
-        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        
-        if (timeSinceLastMsg >= messagePeriod) {
-            lastMsg = std::chrono::system_clock::now();
-            RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'preview_sketch' to connect");
-        }
-    }
-
-    auto request = std::make_shared<picasso_bot::srv::GetImage::Request>();
-
-    auto result = servPreviewSketch_->async_send_request(request);
-    bool success = false;
-    sensor_msgs::msg::Image image;
-
-    // Await responce
-    if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
-        if (result.get()->success) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Sketch generated.");
-            success = true;
-            image = result.get()->image;
-
-        } else {
-            RCLCPP_WARN_STREAM(this->get_logger(), "Failed to generate sketch.");
-        }
-
-    } else {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'preview_sketch'");
-    }
-
-    return image;
 }

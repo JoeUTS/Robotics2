@@ -1,6 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <chrono>
+#include <memory>
+#include <string>
+
 #include <QMainWindow>
 #include <QtCore/QVariant>
 #include <QtWidgets/QAction>
@@ -25,6 +29,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "picasso_bot/srv/get_image.hpp"
+#include "../common/ServiceCommon.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -55,7 +60,9 @@ private:
     QVideoWidget *viewfinder;
     QCameraImageCapture *imageCapture;
     QLabel *imageLabel_;
-    bool processingImage_;
+    QLabel *sketchLabel_;
+    bool eyesShutdownComplete_; // Flag to check if eyes module is shutdown during closing
+    
 
     // ROS 2
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr estop_publisher;
@@ -67,20 +74,14 @@ private:
     rclcpp::Client<picasso_bot::srv::GetImage>::SharedPtr servPreviewSketch_;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_; 
+
+    sensor_msgs::msg::Image sketchMsg_;
     
-    
+    void serviceSketchRequest(void);
+    void serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future);
 
-    bool toggleCameraFeed(void);
-    void cameraFeedToggleResponseCallback(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future);
+    void serviceShutdownEyesRequest(void);
+    void serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future);
 
-    void shutdownEyes(void);
-
-    bool captureImageServ(void);
-
-    bool discardImage(void);
-
-    bool generateToolpath(void);
-
-    sensor_msgs::msg::Image previewSketchServ(void);
 };
 #endif // MAINWINDOW_H
