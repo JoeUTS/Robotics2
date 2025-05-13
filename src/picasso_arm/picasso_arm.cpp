@@ -140,47 +140,67 @@ while (contourMsg.poses.size() > index) {
 
 */
 
-// geometry_msgs::msg::PoseArray PicassoArm::getNextContour(void) {
-//     auto messagePeriod = std::chrono::milliseconds(1000);
-//     std::chrono::time_point<std::chrono::system_clock> lastMsg;
-    
-//     // Wait for service
-//     while (!servNextContour_->wait_for_service(std::chrono::milliseconds(200))) {
-//         // Prevent spaming messages
-//         std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-//         std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+void PicassoArm::serviceNextContourRequest(void) {
+    toolPathMsg_ = geometry_msgs::msg::PoseArray();
+
+    serviceWait<picasso_bot::srv::GetPoseArray>(servNextContour_);
+
+    auto request = std::make_shared<picasso_bot::srv::GetPoseArray::Request>();
+    auto weak_this = std::weak_ptr<PicassoArm>(
+        std::static_pointer_cast<PicassoArm>(this->shared_from_this()));
+
+    servNextContour_->async_send_request(request,
+        [weak_this, this](rclcpp::Client<picasso_bot::srv::GetPoseArray>::SharedFuture future) {
+            
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            shared_this->serviceNextContourRespose(future);
+
+        } else {
+            std::string serviceName = std::string(servNextContour_->get_service_name());
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", serviceName);
+        }
+    });
+
+    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servNextContour_->get_service_name()));
+}
+
+
+void PicassoArm::serviceNextContourRespose(rclcpp::Client<picasso_bot::srv::GetPoseArray>::SharedFuture future) {
+    auto result = future.get();
+    std::string serviceName = std::string(servNextContour_->get_service_name());
+
+    if (result->success) {
+        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", serviceName);
+
+    } else {
+        RCLCPP_WARN(this->get_logger(), "Service '%s' failed.", serviceName);
+    }
+}
+
+geometry_msgs::msg::PoseArray PicassoArm::getNextContour(void) {
+    serviceNextContourRequest();
+    std::chrono::milliseconds sleepTime = std::chrono::milliseconds(100);
+    unsigned int maxAttempts = 10;
+    unsigned int attempts = 0;
+
+    while (toolPathMsg_.poses.size() == 0 && attempts < maxAttempts) {
+        std::this_thread::sleep_for(sleepTime);
+        attempts++;
+    }
+
+    if (toolPathMsg_.poses.size() == 0) {
+        if (prevContourExists_ == false) {
+            RCLCPP_WARN(this->get_logger(), "No contour received after %u ms.", maxAttempts * sleepTime.count());
+        } else {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Drawing complete.");
+        }
         
-//         if (timeSinceLastMsg >= messagePeriod) {
-//             lastMsg = std::chrono::system_clock::now();
-//             RCLCPP_INFO_STREAM(this->get_logger(), "waiting for service 'next_contour' to connect");
-//         }
-//     }
+        return toolPathMsg_;
+    }
 
-//     auto request = std::make_shared<picasso_bot::srv::GetPoseArray::Request>();
-//     auto result = servNextContour_->async_send_request(request);
-    
-//     geometry_msgs::msg::PoseArray contour = geometry_msgs::msg::PoseArray();
+    prevContourExists_ = true;
+    RCLCPP_INFO(this->get_logger(), "Contour received.");
 
-//     // Await responce
-//     if (rclcpp::spin_until_future_complete(this->shared_from_this(), result) == rclcpp::FutureReturnCode::SUCCESS) {
-//         bool success = result.get()->success;
-        
-//         if (success) {
-//             RCLCPP_INFO_STREAM(this->get_logger(), "Contour received.");
-//             success = true;
-//             prevContourExists_ = true;
-//             contour = result.get()->poses;
-
-//         } else if (prevContourExists_ == false) {
-//             RCLCPP_INFO_STREAM(this->get_logger(), "Drawing complete.");
-
-//         } else {
-//             RCLCPP_WARN_STREAM(this->get_logger(), "Failed to get next contour.");
-//         }
-
-//     } else {
-//         RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to call service 'next_contour'");
-//     }
-
-//     return contour;
-// }
+    return toolPathMsg_;
+}

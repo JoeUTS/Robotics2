@@ -1,9 +1,11 @@
 #include "image_controller.h"
 
-imageController::imageController(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg, std::shared_ptr<rclcpp::Node> parentNode) 
-  : lastCameraMsg_(*incomingMsg), parentNode_(parentNode) {
+imageController::imageController(std::shared_ptr<rclcpp::Node> parentNode, const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) 
+  : parentNode_(parentNode), lastCameraMsg_(*incomingMsg) {
+  colourIndex_ = 0;
   
   // Load YOLO model.
+  /*
   std::string packageShareDir = ament_index_cpp::get_package_share_directory("picasso_bot");
 
   std::string pathImageClasses = packageShareDir + "/config/coco-classes.txt";
@@ -11,13 +13,31 @@ imageController::imageController(const realsense2_camera_msgs::msg::RGBD::Shared
 
   std::string pathYOLO = packageShareDir + "/local/yolov5s-seg.onnx";
   load_net(pathYOLO);
+  */
 }
 
 sensor_msgs::msg::Image imageController::updateCameraImage(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
   std::unique_lock<std::mutex> lck(mutex_);
   lastCameraMsg_ = *incomingMsg;
-  sensor_msgs::msg::Image cameraImage = lastCameraMsg_.rgb;
   lck.unlock();
+
+  sensor_msgs::msg::Image cameraImage;
+  cameraImage.height = std::max(incomingMsg->rgb.height, incomingMsg->rgb_camera_info.height);
+  cameraImage.width = std::max(incomingMsg->rgb.width, incomingMsg->rgb_camera_info.width);
+  cameraImage.encoding = incomingMsg->rgb.encoding;
+  cameraImage.is_bigendian = incomingMsg->rgb.is_bigendian;
+  cameraImage.step = incomingMsg->rgb.step;
+  cameraImage.data = incomingMsg->rgb.data;
+  cameraImage.header = incomingMsg->rgb.header;
+  
+  // Set default height and width if not set.
+  if (cameraImage.height == 0 && incomingMsg->rgb.data.size() > 0) {
+    cameraImage.height = 480;
+  }
+
+  if (cameraImage.width == 0 && incomingMsg->rgb.data.size() > 0) {
+    cameraImage.width = 640;
+  }
 
   return cameraImage;
 }
@@ -72,26 +92,6 @@ cv::Scalar imageController::getNextColour(void) {
 cv::Mat imageController::msg2Mat(const sensor_msgs::msg::Image &imageMsg) {
   cv_bridge::CvImagePtr cvPtr;
   cv::Mat image;
-
-  if (imageMsg.encoding == "16UC1" || imageMsg.encoding == "32FC1") {
-    // Depth image.
-    cvPtr = cv_bridge::toCvCopy(imageMsg);
-    image = cvPtr->image;
-    double min, max;
-    cv::minMaxLoc(image, &min, &max);
-    image.convertTo(image, CV_8UC1, 255.0 / max);
-
-  } else if (imageMsg.encoding == "mono8") {
-    // Grayscale image
-    cvPtr = cv_bridge::toCvCopy(imageMsg, "mono8");
-    image = cvPtr->image;
-
-  } else {
-    // Colour image.
-    // NOTE: Camera encoding says RGB but is actually BGR.
-    cvPtr = cv_bridge::toCvCopy(imageMsg, "bgr8");
-    image = cvPtr->image;
-  }
 
   if (imageMsg.encoding == "16UC1" || imageMsg.encoding == "32FC1") {
     // Depth image.
@@ -207,7 +207,6 @@ void imageController::generateArt(void) {
 
   // Return on empty msg.
   if (imageRGB.empty()) {
-    //detectionRunning_ = false;
     return;
   }
   
@@ -226,8 +225,6 @@ void imageController::generateArt(void) {
   std::vector<cv::Vec4i> hierarchy;
   cv::findContours(edges, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
   cv::drawContours(imageRGB, contours, -1, cv::Scalar(0, 0, 255));
-  
-  //detectionRunning_ = false;
 }
 
 

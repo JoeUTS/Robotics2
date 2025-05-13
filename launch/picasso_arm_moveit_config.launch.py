@@ -36,7 +36,6 @@ import os
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from ur_moveit_config.launch_common import load_yaml
-from ament_index_python.packages import get_package_share_directory # - Added by Joseph
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
@@ -53,19 +52,19 @@ def launch_setup(context, *args, **kwargs):
 
     # Added/modified by Joseph.
     robot_ip = LaunchConfiguration("robot_ip")
-    rviz_config_file = os.path.join(
-      get_package_share_directory('picasso_bot'),
-      'rviz',
-      'config_test_picasso_arm.rviz'
-    )
+    rviz_config_file = PathJoinSubstitution([
+                        FindPackageShare('picasso_bot'),
+                        'rviz',
+                        'config_test_picasso_arm.rviz'
+                    ])
     ompl_planning_yaml = load_yaml("picasso_bot", "config/ompl_planning.yaml")
     controllers_yaml = load_yaml("picasso_bot", "config/controllers.yaml")
     servo_yaml = load_yaml("picasso_bot", "config/ur_servo.yaml")
-    robot_description_kinematics = os.path.join(
-      get_package_share_directory('picasso_bot'),
-      'config',
-      'kinematics.yaml'
-    )
+    robot_description_kinematics = PathJoinSubstitution([
+                                    FindPackageShare('picasso_bot'),
+                                    'config',
+                                    'kinematics.yaml'
+                                ])
 
     # Initialize Arguments
     ur_type = LaunchConfiguration("ur_type")

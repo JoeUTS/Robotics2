@@ -22,10 +22,11 @@
 #include <opencv2/opencv.hpp>
 
 #include "image_controller.h"
-#include "Contour.h"
-#include "salesman_solver.h"
+#include "../common/Contour.h"
+#include "../salesman_solver/salesman_solver.h"
 #include "VisulisationSettings.h"
 #include "picasso_bot/srv/get_pose_array.hpp"
+#include "picasso_bot/srv/get_image.hpp"
 
 /*
 // Camera node: (Will need to launch this with launcher)
@@ -48,10 +49,10 @@ private:
   // Services
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servCameraToggleRepub_;      // Toggle republishing camera feed to UI.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;           // Capture image for sketch.
-  rclcpp::Service<picasso_bot::srv::GetImage>::SharedPtr servPreviewSketch_;          // Generate sketch preview from captured image.
+  rclcpp::Service<picasso_bot::srv::GetImage>::SharedPtr servPreviewSketch_;      // Generate sketch preview from captured image.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;           // Discard captured image/sketch.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_;       // Generate draw order.
-  rclcpp::Service<picasso_bot::srv::GetPoseArray>::SharedPtr servNextContour_; // Send next contour to draw.
+  rclcpp::Service<picasso_bot::srv::GetPoseArray>::SharedPtr servNextContour_;    // Send next contour to draw.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr serviceShutdown_;            // Shutdown node.
   
   // Class objects

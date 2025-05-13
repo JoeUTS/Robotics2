@@ -1,6 +1,10 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <chrono>
+#include <memory>
+#include <string>
+
 #include <QMainWindow>
 #include <QtCore/QVariant>
 #include <QtWidgets/QAction>
@@ -17,24 +21,26 @@
 #include <QObject>
 
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <ros_image_to_qimage/ros_image_to_qimage.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
-#include
+#include "picasso_bot/srv/get_image.hpp"
+#include "../common/ServiceCommon.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow, public rclcpp::Node  // In ROS node should be inherrited.
+class MainWindow : public QMainWindow, public rclcpp::Node
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
@@ -43,6 +49,7 @@ private slots:
     void captureImage();
     void sendEmergencyStop();
     void previewSketch();
+    void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
     
 
  //   void on_widget_customContextMenuRequested(const QPoint &pos);
@@ -52,32 +59,29 @@ private:
    // QCamera *camera;
     QVideoWidget *viewfinder;
     QCameraImageCapture *imageCapture;
+    QLabel *imageLabel_;
+    QLabel *sketchLabel_;
+    bool eyesShutdownComplete_; // Flag to check if eyes module is shutdown during closing
+    
 
     // ROS 2
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr estop_publisher;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscriber;
 
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCamerafeed_;  // Added service to toggle camera feed - Joseph
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEyesShutdown_; // Added service to shutdown picasso eyes - Joseph.
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCamerafeed_;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEyesShutdown_;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;
     rclcpp::Client<picasso_bot::srv::GetImage>::SharedPtr servPreviewSketch_;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_; 
+
+    sensor_msgs::msg::Image sketchMsg_;
     
-    void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
+    void serviceSketchRequest(void);
+    void serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future);
 
-    // Run this function to set the camera feed to given state - Joseph
-    bool toggleCameraFeed(void);
+    void serviceShutdownEyesRequest(void);
+    void serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future);
 
-    // Run this function to shutdown eyes - Joseph
-    void shutdownEyes(void);
-
-    bool captureImageServ(void);
-
-    bool discardImage(void);
-
-    bool generateToolpath(void);
-
-    cv::Mat previewSketchServ(void);
 };
 #endif // MAINWINDOW_H
