@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.3
+** Created by: Qt User Interface Compiler version 5.15.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -11,11 +11,9 @@
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
-#include <QtWidgets/QLabel>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QSlider>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QWidget>
 
@@ -34,11 +32,11 @@ public:
     QWidget *widget_3;
     QPushButton *startDrawing;
     QPushButton *eStopButton;
-    QSlider *adjustSpeedSlider;
-    QLabel *label;
     QWidget *widget_2;
     QPushButton *previewSketch;
     QWidget *viewfinderPlaceholder_2;
+    QPushButton *discardImage;
+    QPushButton *generateToolpath;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
@@ -46,7 +44,7 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(800, 600);
+        MainWindow->resize(694, 318);
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         widget = new QWidget(centralwidget);
@@ -78,7 +76,7 @@ public:
         connectUR3->setStyleSheet(QString::fromUtf8("background: white;"));
         widget_3 = new QWidget(centralwidget);
         widget_3->setObjectName(QString::fromUtf8("widget_3"));
-        widget_3->setGeometry(QRect(460, 0, 231, 271));
+        widget_3->setGeometry(QRect(460, 0, 141, 271));
         widget_3->setAutoFillBackground(false);
         widget_3->setStyleSheet(QString::fromUtf8("border: 1px solid black;\n"
 "background-color: rgb(191, 205, 206);\n"
@@ -91,13 +89,6 @@ public:
         eStopButton->setObjectName(QString::fromUtf8("eStopButton"));
         eStopButton->setGeometry(QRect(10, 90, 121, 31));
         eStopButton->setStyleSheet(QString::fromUtf8("background: qlineargradient(spread:pad, x1:0.352632, y1:0.324, x2:0.379, y2:1, stop:0 rgba(255, 0, 0, 255), stop:1 rgba(255, 255, 255, 255))"));
-        adjustSpeedSlider = new QSlider(widget_3);
-        adjustSpeedSlider->setObjectName(QString::fromUtf8("adjustSpeedSlider"));
-        adjustSpeedSlider->setGeometry(QRect(20, 220, 160, 16));
-        adjustSpeedSlider->setOrientation(Qt::Horizontal);
-        label = new QLabel(widget_3);
-        label->setObjectName(QString::fromUtf8("label"));
-        label->setGeometry(QRect(20, 190, 121, 16));
         widget_2 = new QWidget(centralwidget);
         widget_2->setObjectName(QString::fromUtf8("widget_2"));
         widget_2->setGeometry(QRect(230, 0, 231, 271));
@@ -113,10 +104,18 @@ public:
         viewfinderPlaceholder_2->setObjectName(QString::fromUtf8("viewfinderPlaceholder_2"));
         viewfinderPlaceholder_2->setGeometry(QRect(10, 50, 211, 131));
         viewfinderPlaceholder_2->setStyleSheet(QString::fromUtf8("background: black;"));
+        discardImage = new QPushButton(widget_2);
+        discardImage->setObjectName(QString::fromUtf8("discardImage"));
+        discardImage->setGeometry(QRect(10, 190, 121, 31));
+        discardImage->setStyleSheet(QString::fromUtf8("background: white;"));
+        generateToolpath = new QPushButton(widget_2);
+        generateToolpath->setObjectName(QString::fromUtf8("generateToolpath"));
+        generateToolpath->setGeometry(QRect(10, 230, 121, 31));
+        generateToolpath->setStyleSheet(QString::fromUtf8("background: white;"));
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName(QString::fromUtf8("menubar"));
-        menubar->setGeometry(QRect(0, 0, 800, 20));
+        menubar->setGeometry(QRect(0, 0, 694, 20));
         MainWindow->setMenuBar(menubar);
         statusbar = new QStatusBar(MainWindow);
         statusbar->setObjectName(QString::fromUtf8("statusbar"));
@@ -136,8 +135,9 @@ public:
         connectUR3->setText(QCoreApplication::translate("MainWindow", "Connect UR3", nullptr));
         startDrawing->setText(QCoreApplication::translate("MainWindow", "Start Drawing", nullptr));
         eStopButton->setText(QCoreApplication::translate("MainWindow", "Emergency Stop", nullptr));
-        label->setText(QCoreApplication::translate("MainWindow", "Adjust Robot Speed", nullptr));
         previewSketch->setText(QCoreApplication::translate("MainWindow", "Preview Sketch", nullptr));
+        discardImage->setText(QCoreApplication::translate("MainWindow", "Discard Image", nullptr));
+        generateToolpath->setText(QCoreApplication::translate("MainWindow", "Generate Toolpath", nullptr));
     } // retranslateUi
 
 };

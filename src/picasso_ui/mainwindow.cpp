@@ -35,6 +35,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->captureImage, &QPushButton::clicked, this, &MainWindow::captureImage);
     connect(ui->connectUR3, &QPushButton::clicked, this, &MainWindow::connectUR3);
     connect(ui->previewSketch, &QPushButton::clicked, this, &MainWindow::previewSketch);
+    connect(ui->discardImage , &QPushButton::clicked, this, &MainWindow::servDiscardImage_);
+    connect(ui->generateToolpath , &QPushButton::clicked, this, &MainWindow::servGenerateToolpath_);
     // connect(ui->eStopButton, &QPushButton::clicked, this, &MainWindow::sendEmergencyStop);
 
 
@@ -229,4 +231,3 @@ void MainWindow::serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigge
     }
 }
 
-cv::Mat MainWindow::previewSketchServ(void);
