@@ -186,8 +186,6 @@ install(
   #local # Comment out if causing build issues
   launch
   rviz
-  worlds
-  srv
   DESTINATION share/${PROJECT_NAME}
 )
 

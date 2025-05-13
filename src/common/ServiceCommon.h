@@ -21,7 +21,7 @@ void serviceWait(typename rclcpp::Client<ServiceT>::SharedPtr client) {
     if (timeSinceLastMsg >= messagePeriod) {
       lastMsg = std::chrono::system_clock::now();
       std::string serviceName = std::string(client->get_service_name());
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "waiting for service '%s' to connect", serviceName);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service '%s' to connect", serviceName);
     }
   }
 }
@@ -45,7 +45,7 @@ void serviceRequest(typename rclcpp::Client<ServiceT>::SharedPtr client,
 
         } else {
             std::string serviceName = std::string(client->get_service_name());
-            RCLCPP_WARN(node->get_logger(), "MainWindow object expired, cannot process service '%s'.", serviceName);
+            RCLCPP_WARN(node->get_logger(), "Node object expired, cannot process service '%s'.", serviceName);
         }
     });
     

@@ -4,8 +4,6 @@ from launch_ros.actions import Node
 from launch import LaunchDescription
 
 def generate_launch_description():
-    ld = LaunchDescription()
-  
     # nodes
     picasso_ui = Node(
       package="picasso_bot",
@@ -16,6 +14,7 @@ def generate_launch_description():
     )
 
     # add actions to launch
+    ld = LaunchDescription()
     ld.add_action(picasso_ui)
 
     return ld

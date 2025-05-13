@@ -20,14 +20,34 @@ PicassoArm::PicassoArm(void) : Node("picasso_arm") {
     //     "/eyes_toolpath", 10,  // <-- replace with actual topic name if different
     //     std::bind(&PicassoArm::toolpath_callback, this, std::placeholders::_1)
     // );
-
+    /*
     timer_ = this->create_wall_timer(
         std::chrono::seconds(5), 
         std::bind(&PicassoArm::moveToPose, this) 
     );
+    */
+
+    
+
+
+
+    servStartDrawing_ = this->create_service<std_srvs::srv::Trigger>("/start_drawing", 
+                                          std::bind(&PicassoArm::serviceStartDrawing, 
+                                          this, std::placeholders::_1, std::placeholders::_2));
+
+    servStopDrawing_ = this->create_service<std_srvs::srv::Trigger>("/stop_drawing", 
+                                          std::bind(&PicassoArm::serviceStopDrawing, 
+                                          this, std::placeholders::_1, std::placeholders::_2));
+
+    servHomePose_ = this->create_service<std_srvs::srv::Trigger>("/move_to_home", 
+                                          std::bind(&PicassoArm::serviceMoveToHome, 
+                                          this, std::placeholders::_1, std::placeholders::_2));
+
+    servEStop = this->create_service<std_srvs::srv::Trigger>("/e_stop", 
+                                    std::bind(&PicassoArm::serviceEStop, 
+                                    this, std::placeholders::_1, std::placeholders::_2));
 
     servNextContour_ = this->create_client<picasso_bot::srv::GetPoseArray>("/next_contour");
-    
 };
 
 // void PicassoArm::moveToNextPose() {
@@ -140,8 +160,33 @@ while (contourMsg.poses.size() > index) {
 
 */
 
+void PicassoArm::serviceStartDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "Drawing started.");
+    // TO DO: Start drawing loop
+}
+
+void PicassoArm::serviceStopDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "Drawing stopped.");
+    // TO DO: Stop drawing loop
+}
+
+void PicassoArm::serviceMoveToHome(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "moving to home");
+    // TO DO: Move to home pose
+}
+
+void PicassoArm::serviceEStop(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    response->success = true;
+    RCLCPP_WARN(this->get_logger(), "E-stop activated.");
+    // TO DO: Set E-Stop state to true
+}
+
 void PicassoArm::serviceNextContourRequest(void) {
     toolPathMsg_ = geometry_msgs::msg::PoseArray();
+    toolPathIndex_ = 0;
 
     serviceWait<picasso_bot::srv::GetPoseArray>(servNextContour_);
 

@@ -6,20 +6,22 @@ from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, TimerAction, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.conditions import IfCondition
-from launch.substitutions import PathJoinSubstitution, LaunchConfiguration, PythonExpression
+from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 
 def generate_launch_description():
-    ld = LaunchDescription()
-
     # settings
-    realSenseStartDelay = 7.0  # [sec].
+    realSenseStartDelay = 4.0  # [sec].
   
     # launch parameters
-    rviz_config_file = PathJoinSubstitution([
-      FindPackageShare('picasso_bot'),
-      'rviz',
-      'config_test_picasso_eyes.rviz'
-    ])
+    declare_rviz_config_file = DeclareLaunchArgument(
+      "rviz_config_file",
+      default_value=PathJoinSubstitution([
+        FindPackageShare('picasso_bot'),
+        "rviz", 
+        "config_test_picasso_eyes.rviz"
+      ]),
+    )
+    rviz_config_file = LaunchConfiguration('rviz_config_file')
 
     declare_use_rviz = DeclareLaunchArgument(
       'launch_rviz',
@@ -45,7 +47,7 @@ def generate_launch_description():
       output="screen",
       arguments=["-d", rviz_config_file],
     )
-
+  
     realsense_camera = IncludeLaunchDescription(
       PythonLaunchDescriptionSource([
         PathJoinSubstitution([
@@ -74,7 +76,10 @@ def generate_launch_description():
     )
 
     # add actions to launch
+    ld = LaunchDescription()
+    ld.add_action(declare_rviz_config_file)
     ld.add_action(declare_use_rviz)
+
     ld.add_action(realsense_camera)
     ld.add_action(delayed_start_picasso_eyes)
 
