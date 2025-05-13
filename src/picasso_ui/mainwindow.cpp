@@ -87,17 +87,22 @@ void MainWindow::connectUR3() {
 
 void MainWindow::captureImage() {
     // Get the current image from the QLabel
-    QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
-    if (imageLabel) {
-        QPixmap pixmap = *(imageLabel->pixmap());
-        if (!pixmap.isNull()) {
-            // Save the image to a file
-            QString filePath = QFileDialog::getSaveFileName(this, "Save Image", QDir::homePath(), "Images (*.jpg *.png *.bmp)");
-            if (!filePath.isEmpty()) {
-                pixmap.toImage().save(filePath);
-            }
-        }
-    }
+    // QLabel *imageLabel = ui->viewfinderPlaceholder->findChild<QLabel *>("imageLabel");
+    // if (imageLabel) {
+    //     QPixmap pixmap = *(imageLabel->pixmap());
+    //     if (!pixmap.isNull()) {
+    //         // Save the image to a file
+    //         QString filePath = QFileDialog::getSaveFileName(this, "Save Image", QDir::homePath(), "Images (*.jpg *.png *.bmp)");
+    //         if (!filePath.isEmpty()) {
+    //             pixmap.toImage().save(filePath);
+    //         }
+    //     }
+    // }
+
+    captureImageServ();
+    // Call the service to capture an image
+
+
 }
 
 void MainWindow::sendEmergencyStop() {
@@ -162,7 +167,7 @@ void MainWindow::previewSketch() {
         RCLCPP_ERROR(node->get_logger(), "Image label not found.");
     }a, sketch.cols, sketch.rows, sketch.step, QImage::Format_BGR888);*/
 
-    cv::Mat sketch = ;//code from picassoeyes
+    sensor_msgs::msg::Image sketch = ;//code from picassoeyes
     if (sketch.empty()) {
         RCLCPP_ERROR(this->get_logger(), "No sketch preview available.");
         return;
@@ -352,4 +357,4 @@ bool MainWindow::generateToolpath(void) {
     return success;
 }
 
-cv::Mat MainWindow::previewSketch(void);
+cv::Mat MainWindow::previewSketchServ(void);

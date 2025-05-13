@@ -78,6 +78,6 @@ private:
 
     bool generateToolpath(void);
 
-    cv::Mat previewSketch(void);
+    cv::Mat previewSketchServ(void);
 };
 #endif // MAINWINDOW_H
