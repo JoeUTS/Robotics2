@@ -35,8 +35,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->captureImage, &QPushButton::clicked, this, &MainWindow::captureImage);
     connect(ui->connectUR3, &QPushButton::clicked, this, &MainWindow::connectUR3);
     connect(ui->previewSketch, &QPushButton::clicked, this, &MainWindow::previewSketch);
-    connect(ui->discardImage , &QPushButton::clicked, this, &MainWindow::servDiscardImage_);
-    connect(ui->generateToolpath , &QPushButton::clicked, this, &MainWindow::servGenerateToolpath_);
+    connect(ui->discardImage , &QPushButton::clicked, this, &MainWindow::discardImage);
+    connect(ui->generateToolpath , &QPushButton::clicked, this, &MainWindow::generateToolpath);
+    connect(ui->startDrawing , &QPushButton::clicked, this, &MainWindow::startDrawing);
     // connect(ui->eStopButton, &QPushButton::clicked, this, &MainWindow::sendEmergencyStop);
 
 
@@ -231,3 +232,16 @@ void MainWindow::serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigge
     }
 }
 
+void MainWindow::discardImage() {
+    serviceRequest<std_srvs::srv::Trigger>(servDiscardImage_, this->shared_from_this());
+}
+
+void MainWindow::generateToolpath() {
+    serviceRequest<std_srvs::srv::Trigger>(servGenerateToolpath_, this->shared_from_this());
+}
+
+void MainWindow::startDrawing() {
+    auto client = this->create_client<std_srvs::srv::Trigger>("start_drawing");
+    serviceRequest<std_srvs::srv::Trigger>(client, this->shared_from_this());
+    //serviceRequest<std_srvs::srv::Trigger>(servStartDrawing_, this->shared_from_this());
+}

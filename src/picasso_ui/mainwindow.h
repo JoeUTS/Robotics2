@@ -50,6 +50,9 @@ private slots:
     void sendEmergencyStop();
     void previewSketch();
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
+    void discardImage();
+    void generateToolpath();
+    void startDrawing();
     
 
  //   void on_widget_customContextMenuRequested(const QPoint &pos);
@@ -87,9 +90,9 @@ private:
     
     void serviceSketchRequest(void);
     void serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future);
-
     void serviceShutdownEyesRequest(void);
     void serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future);
+
 
 };
 #endif // MAINWINDOW_H
