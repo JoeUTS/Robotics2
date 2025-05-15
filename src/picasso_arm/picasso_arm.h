@@ -27,16 +27,21 @@ public:
   void getGoalPose(); // Declare moveRandomly()
   void moveToNextPose(); // Declare moveToNextPose()
   void cartesianPath(); // Declare cartesianPath()
+  void startExecutor(); // Declare startExecutor()
   void toolpath_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg); // Declare toolpath_callback()
 
 
 private:
 
+  std::shared_ptr<rclcpp::executors::SingleThreadedExecutor> executor_;
+  std::thread spinner_;
   rclcpp::TimerBase::SharedPtr timer_;  // Timer for periodic execution
+
   //std::shared_ptr<PicassoEyes> eyes_;                // Pointer to the Eyes system
+
   std::vector<geometry_msgs::msg::Point> target_points_; // List of target points to move through
   size_t current_target_index_ = 0;
-  //rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr toolpath_subscriber_; // not needed
+
 
   // Added by Joseph
   bool prevContourExists_ = false;              // Flag to check if first contour has been received
