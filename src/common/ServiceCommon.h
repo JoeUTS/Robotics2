@@ -7,21 +7,26 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+namespace ServiceCommon {
+    int messagePeriodVal = 1000;  //[ms]
+    int servicePeriodVal = 200;  //[ms]
+};
+
 
 template <typename ServiceT>
 /// \brief Wait for a service to be available
 void serviceWait(typename rclcpp::Client<ServiceT>::SharedPtr client) {
-  auto messagePeriod = std::chrono::milliseconds(1000);
+  auto messagePeriod = std::chrono::milliseconds(messagePeriodVal);
   std::chrono::time_point<std::chrono::system_clock> lastMsg;
   
-  while (!client->wait_for_service(std::chrono::milliseconds(200))) {
+  while (!client->wait_for_service(std::chrono::milliseconds(servicePeriodVal))) {
     std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
     std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
     
     if (timeSinceLastMsg >= messagePeriod) {
       lastMsg = std::chrono::system_clock::now();
       std::string serviceName = std::string(client->get_service_name());
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service '%s' to connect", serviceName);
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service '%s' to connect", serviceName.c_str());
     }
   }
 }
@@ -45,12 +50,12 @@ void serviceRequest(typename rclcpp::Client<ServiceT>::SharedPtr client,
 
         } else {
             std::string serviceName = std::string(client->get_service_name());
-            RCLCPP_WARN(node->get_logger(), "Node object expired, cannot process service '%s'.", serviceName);
+            RCLCPP_WARN(node->get_logger(), "Node object expired, cannot process service '%s'.", serviceName.c_str());
         }
     });
     
     std::string serviceName = std::string(client->get_service_name());
-    RCLCPP_INFO(node->get_logger(), "Service '%s' request sent.", serviceName);
+    RCLCPP_INFO(node->get_logger(), "Service '%s' request sent.", serviceName.c_str());
 }
 
 template <typename ServiceT>
@@ -61,10 +66,10 @@ void serviceResponce(typename rclcpp::Client<ServiceT>::SharedPtr client,
     auto result = future.get();
 
     if (result->success) {
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service '%s' called successfully.", serviceName);
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service '%s' called successfully.", serviceName.c_str());
 
     } else {
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Service '%s' failed: %s", serviceName, result->message);
+        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Service '%s' failed: %s", serviceName.c_str(), result->message);
     }
 }
 
