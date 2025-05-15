@@ -53,6 +53,7 @@ private slots:
     void discardImage();
     void generateToolpath();
     void startDrawing();
+    void stopDrawing();
     
 
  //   void on_widget_customContextMenuRequested(const QPoint &pos);
@@ -81,10 +82,10 @@ private:
 
     // Arm services
     // These can be called with: "serviceRequest<std_srvs::srv::Trigger>(<service_member_variable>, this->shared_from_this())"
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servStartDrawing_;       // Starts the drawing process
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servStopDrawing_;        // Stops the drawing process
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servHomePose_;           // Moves the arm to the home pose
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servEStop;               // E-stop
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servStartDrawing_;       // Starts the drawing process
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servStopDrawing_;        // Stops the drawing process
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servHomePose_;           // Moves the arm to the home pose
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEStop_;              // E-stop
 
     sensor_msgs::msg::Image sketchMsg_;
     
@@ -92,7 +93,5 @@ private:
     void serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future);
     void serviceShutdownEyesRequest(void);
     void serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future);
-
-
 };
 #endif // MAINWINDOW_H

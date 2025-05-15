@@ -55,6 +55,10 @@ MainWindow::MainWindow(QWidget *parent)
     servPreviewSketch_ = this->create_client<picasso_bot::srv::GetImage>("/preview_sketch");
     servDiscardImage_ = this->create_client<std_srvs::srv::Trigger>("/discard_image");          // TO DO: add button
     servGenerateToolpath_ = this->create_client<std_srvs::srv::Trigger>("/generate_toolpath");  // TO DO: add button
+    servStartDrawing_ = this->create_client<std_srvs::srv::Trigger>("/start_drawing");
+    servStopDrawing_ = this->create_client<std_srvs::srv::Trigger>("/stop_drawing");
+    servHomePose_ = this->create_client<std_srvs::srv::Trigger>("/home_pose");
+    servEStop_ = this->create_client<std_srvs::srv::Trigger>("/e_stop");
 }
 
 MainWindow::~MainWindow() {
@@ -74,11 +78,7 @@ MainWindow::~MainWindow() {
 
 
 void MainWindow::startCamera() {
-
-    //serv_toggleCameraRequest();
     serviceRequest<std_srvs::srv::Trigger>(servCamerafeed_, this->shared_from_this());
-
-    // Code moved to constructor to set QLabel as a member variable - Joseph
 
     RCLCPP_INFO(this->get_logger(), "Camera started. Waiting for images..."); 
 }
@@ -91,14 +91,16 @@ void MainWindow::connectUR3() {
 
 
 void MainWindow::captureImage() {
-    // Changed to use eyes service, no need to save image - Joseph
     serviceRequest<std_srvs::srv::Trigger>(servCaptureImage_, this->shared_from_this());
 }
+
 
 void MainWindow::sendEmergencyStop() {
    std_msgs::msg::Bool msg;
    msg.data = true;
    estop_publisher->publish(msg);
+
+   serviceRequest<std_srvs::srv::Trigger>(servEStop_, this->shared_from_this());
 }
 
 
@@ -241,7 +243,9 @@ void MainWindow::generateToolpath() {
 }
 
 void MainWindow::startDrawing() {
-    auto client = this->create_client<std_srvs::srv::Trigger>("start_drawing");
-    serviceRequest<std_srvs::srv::Trigger>(client, this->shared_from_this());
-    //serviceRequest<std_srvs::srv::Trigger>(servStartDrawing_, this->shared_from_this());
+    serviceRequest<std_srvs::srv::Trigger>(servStartDrawing_, this->shared_from_this());
+}
+
+void MainWindow::stopDrawing() {
+    serviceRequest<std_srvs::srv::Trigger>(servStopDrawing_, this->shared_from_this());
 }

@@ -7,28 +7,22 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-namespace ServiceCommon {
-    int messagePeriodVal = 1000;  //[ms]
-    int servicePeriodVal = 200;  //[ms]
-};
-
-
 template <typename ServiceT>
 /// \brief Wait for a service to be available
 void serviceWait(typename rclcpp::Client<ServiceT>::SharedPtr client) {
-  auto messagePeriod = std::chrono::milliseconds(messagePeriodVal);
-  std::chrono::time_point<std::chrono::system_clock> lastMsg;
-  
-  while (!client->wait_for_service(std::chrono::milliseconds(servicePeriodVal))) {
-    std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-    std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+    auto messagePeriod = std::chrono::milliseconds(1000);
+    std::chrono::time_point<std::chrono::system_clock> lastMsg;
     
-    if (timeSinceLastMsg >= messagePeriod) {
-      lastMsg = std::chrono::system_clock::now();
-      std::string serviceName = std::string(client->get_service_name());
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service '%s' to connect", serviceName.c_str());
+    while (!client->wait_for_service(std::chrono::milliseconds(200))) {
+        std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
+        std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        
+        if (timeSinceLastMsg >= messagePeriod) {
+        lastMsg = std::chrono::system_clock::now();
+        std::string serviceName = std::string(client->get_service_name());
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service '%s' to connect", serviceName.c_str());
+        }
     }
-  }
 }
 
 template <typename ServiceT>
