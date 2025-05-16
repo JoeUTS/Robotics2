@@ -19,8 +19,7 @@ void serviceWait(typename rclcpp::Client<ServiceT>::SharedPtr client) {
         
         if (timeSinceLastMsg >= messagePeriod) {
         lastMsg = std::chrono::system_clock::now();
-        std::string serviceName = std::string(client->get_service_name());
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service '%s' to connect", serviceName.c_str());
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service to connect");
         }
     }
 }
@@ -43,27 +42,24 @@ void serviceRequest(typename rclcpp::Client<ServiceT>::SharedPtr client,
             serviceResponce<ServiceT>(client, future);
 
         } else {
-            std::string serviceName = std::string(client->get_service_name());
-            RCLCPP_WARN(node->get_logger(), "Node object expired, cannot process service '%s'.", serviceName.c_str());
+            RCLCPP_WARN(node->get_logger(), "Node object expired, cannot process service.");
         }
     });
     
-    std::string serviceName = std::string(client->get_service_name());
-    RCLCPP_INFO(node->get_logger(), "Service '%s' request sent.", serviceName.c_str());
+    RCLCPP_INFO(node->get_logger(), "Service request sent.");
 }
 
 template <typename ServiceT>
 /// \brief Handle the service response
 void serviceResponce(typename rclcpp::Client<ServiceT>::SharedPtr client, 
                     typename rclcpp::Client<ServiceT>::SharedFuture future) {
-    std::string serviceName = std::string(client->get_service_name());
     auto result = future.get();
 
     if (result->success) {
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service '%s' called successfully.", serviceName.c_str());
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Service called successfully.");
 
     } else {
-        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Service '%s' failed: %s", serviceName.c_str(), result->message);
+        RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "Service failed.");
     }
 }
 

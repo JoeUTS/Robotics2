@@ -30,7 +30,7 @@ def generate_launch_description():
 
     declare_ur_start_delay = DeclareLaunchArgument(
       'ur_Start_Delay',
-      default_value='1.0',
+      default_value='3.0',
       description='Delay before launching UR drivers'
     )
     ur_Start_Delay = LaunchConfiguration('ur_Start_Delay')
@@ -52,9 +52,9 @@ def generate_launch_description():
     declare_rviz_config_file = DeclareLaunchArgument(
       "rviz_config_file",
       default_value=PathJoinSubstitution([
-        FindPackageShare('ur_moveit_config'),
+        FindPackageShare('picasso_bot'),
         "rviz", 
-        "view_robot.rviz"
+        "config_test_picasso_arm.rviz"
       ]),
     )
     rviz_config_file = LaunchConfiguration('rviz_config_file')
@@ -122,7 +122,7 @@ def generate_launch_description():
       launch_arguments={
           "ur_type": ur_type,
           "use_sim_time": ur_Mock_Hardware,
-          "launch_rviz": launch_rviz
+          "launch_rviz": 'false'
       }.items()
     )
 
@@ -146,7 +146,8 @@ def generate_launch_description():
     ld.add_action(delayed_start_picasso_arm)
     ld.add_action(ur_sim_driver)
     ld.add_action(ur_driver)
-    ld.add_action(rviz_node)# not working - currenly using ur config
+    ld.add_action(rviz_node)
+    
     ld.add_action(moveit)
     
     return ld

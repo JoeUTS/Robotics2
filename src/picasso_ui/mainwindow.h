@@ -65,30 +65,27 @@ private:
     QCameraImageCapture *imageCapture;
     QLabel *imageLabel_;
     QLabel *sketchLabel_;
-    bool eyesShutdownComplete_; // Flag to check if eyes module is shutdown during closing
-    
 
     // ROS 2
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr estop_publisher;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscriber;
 
-    // Eyes services
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCamerafeed_;
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEyesShutdown_;
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;
-    rclcpp::Client<picasso_bot::srv::GetImage>::SharedPtr servPreviewSketch_;
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCamerafeed_;         // Connect to camera
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEyesShutdown_;       // Shutdown eyes module
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servCaptureImage_;       // Capture image
+    rclcpp::Client<picasso_bot::srv::GetImage>::SharedPtr servPreviewSketch_;  // Preview sketch
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;       // Discard captured image
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_;   // Generate toolpath from sketch
 
-    // Arm services
-    // These can be called with: "serviceRequest<std_srvs::srv::Trigger>(<service_member_variable>, this->shared_from_this())"
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servConnectUR_;          // Connects to UR arm
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servStartDrawing_;       // Starts the drawing process
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servStopDrawing_;        // Stops the drawing process
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servHomePose_;           // Moves the arm to the home pose
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr servEStop_;              // E-stop
 
-    sensor_msgs::msg::Image sketchMsg_;
-    
+    sensor_msgs::msg::Image sketchMsg_; // Received sketch
+    bool eyesShutdownComplete_;         // Flag to check if eyes module is shutdown during closing
+    std::string serviceLogName_;        // Holds name of service for logging.
+
     void serviceSketchRequest(void);
     void serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future);
     void serviceShutdownEyesRequest(void);
