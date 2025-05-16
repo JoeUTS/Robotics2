@@ -47,12 +47,13 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(1038, 643);
+        MainWindow->resize(2076, 1286);
+        MainWindow->setMinimumSize(QSize(400, 400));
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         horizontalLayoutWidget = new QWidget(centralwidget);
         horizontalLayoutWidget->setObjectName(QString::fromUtf8("horizontalLayoutWidget"));
-        horizontalLayoutWidget->setGeometry(QRect(60, 20, 791, 311));
+        horizontalLayoutWidget->setGeometry(QRect(60, 20, 1261, 491));
         horizontalLayout = new QHBoxLayout(horizontalLayoutWidget);
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
         horizontalLayout->setContentsMargins(0, 0, 0, 0);
@@ -64,23 +65,26 @@ public:
 "border-radius: 10px;"));
         startCamera = new QPushButton(widget);
         startCamera->setObjectName(QString::fromUtf8("startCamera"));
-        startCamera->setGeometry(QRect(10, 10, 111, 31));
+        startCamera->setGeometry(QRect(10, 20, 151, 51));
+        QFont font;
+        font.setPointSize(10);
+        startCamera->setFont(font);
         startCamera->setStyleSheet(QString::fromUtf8("background: white;"));
         viewfinderPlaceholder = new QWidget(widget);
         viewfinderPlaceholder->setObjectName(QString::fromUtf8("viewfinderPlaceholder"));
-        viewfinderPlaceholder->setGeometry(QRect(10, 50, 241, 131));
+        viewfinderPlaceholder->setGeometry(QRect(10, 90, 401, 261));
         viewfinderPlaceholder->setStyleSheet(QString::fromUtf8("background: black;"));
         captureImage = new QPushButton(widget);
         captureImage->setObjectName(QString::fromUtf8("captureImage"));
-        captureImage->setGeometry(QRect(10, 190, 121, 31));
+        captureImage->setGeometry(QRect(10, 380, 151, 51));
         captureImage->setStyleSheet(QString::fromUtf8("background: white;"));
         processImage = new QPushButton(widget);
         processImage->setObjectName(QString::fromUtf8("processImage"));
-        processImage->setGeometry(QRect(10, 230, 121, 31));
+        processImage->setGeometry(QRect(230, 380, 131, 51));
         processImage->setStyleSheet(QString::fromUtf8("background: white;"));
         connectUR3 = new QPushButton(widget);
         connectUR3->setObjectName(QString::fromUtf8("connectUR3"));
-        connectUR3->setGeometry(QRect(130, 10, 91, 31));
+        connectUR3->setGeometry(QRect(210, 20, 161, 51));
         connectUR3->setStyleSheet(QString::fromUtf8("background: white;"));
 
         horizontalLayout->addWidget(widget);
@@ -93,19 +97,20 @@ public:
 "border-radius: 10px;"));
         previewSketch = new QPushButton(widget_2);
         previewSketch->setObjectName(QString::fromUtf8("previewSketch"));
-        previewSketch->setGeometry(QRect(10, 10, 121, 31));
+        previewSketch->setGeometry(QRect(70, 10, 241, 61));
         previewSketch->setStyleSheet(QString::fromUtf8("background: white;"));
         viewfinderPlaceholder_2 = new QWidget(widget_2);
         viewfinderPlaceholder_2->setObjectName(QString::fromUtf8("viewfinderPlaceholder_2"));
-        viewfinderPlaceholder_2->setGeometry(QRect(10, 50, 241, 131));
+        viewfinderPlaceholder_2->setGeometry(QRect(10, 90, 391, 261));
         viewfinderPlaceholder_2->setStyleSheet(QString::fromUtf8("background: black;"));
         discardImage = new QPushButton(widget_2);
         discardImage->setObjectName(QString::fromUtf8("discardImage"));
-        discardImage->setGeometry(QRect(10, 190, 121, 31));
+        discardImage->setGeometry(QRect(260, 380, 131, 51));
         discardImage->setStyleSheet(QString::fromUtf8("background: white;"));
         generateToolpath = new QPushButton(widget_2);
         generateToolpath->setObjectName(QString::fromUtf8("generateToolpath"));
-        generateToolpath->setGeometry(QRect(10, 230, 121, 31));
+        generateToolpath->setGeometry(QRect(10, 380, 141, 51));
+        generateToolpath->setFont(font);
         generateToolpath->setStyleSheet(QString::fromUtf8("background: white;"));
 
         horizontalLayout->addWidget(widget_2);
@@ -118,11 +123,11 @@ public:
 "border-radius: 10px;"));
         startDrawing = new QPushButton(widget_3);
         startDrawing->setObjectName(QString::fromUtf8("startDrawing"));
-        startDrawing->setGeometry(QRect(10, 10, 121, 31));
+        startDrawing->setGeometry(QRect(80, 10, 221, 61));
         startDrawing->setStyleSheet(QString::fromUtf8("background: white;"));
         eStopButton = new QPushButton(widget_3);
         eStopButton->setObjectName(QString::fromUtf8("eStopButton"));
-        eStopButton->setGeometry(QRect(10, 90, 121, 31));
+        eStopButton->setGeometry(QRect(100, 250, 191, 81));
         eStopButton->setStyleSheet(QString::fromUtf8("background: qlineargradient(spread:pad, x1:0.352632, y1:0.324, x2:0.379, y2:1, stop:0 rgba(255, 0, 0, 255), stop:1 rgba(255, 255, 255, 255))"));
 
         horizontalLayout->addWidget(widget_3);
@@ -130,7 +135,7 @@ public:
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName(QString::fromUtf8("menubar"));
-        menubar->setGeometry(QRect(0, 0, 1038, 20));
+        menubar->setGeometry(QRect(0, 0, 2076, 22));
         MainWindow->setMenuBar(menubar);
         statusbar = new QStatusBar(MainWindow);
         statusbar->setObjectName(QString::fromUtf8("statusbar"));
