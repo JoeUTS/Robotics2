@@ -5,6 +5,11 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.11")
   # CMP0071: Let AUTOMOC and AUTOUIC process GENERATED files.
   cmake_policy(SET CMP0071 NEW)
 endif()
+
+if (CMAKE_VERION VERSION_GREATER_EQUAL "3.12")
+  # CMP0072: FindBoost without Boost_USE_STATIC_LIBS.
+  cmake_policy(SET CMP0072 NEW)
+ENDIF()
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.13")
   # CMP0167: The FindBoost module is removed.
   cmake_policy(SET CMP0167 NEW)
@@ -65,6 +70,7 @@ include_directories(
 rosidl_generate_interfaces(${PROJECT_NAME}
   srv/GetPoseArray.srv
   srv/GetImage.srv
+  srv/GetTotalLines.srv
   DEPENDENCIES builtin_interfaces geometry_msgs sensor_msgs
 )
 rosidl_get_typesupport_target(cpp_typesupport_target 

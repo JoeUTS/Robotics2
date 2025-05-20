@@ -35,6 +35,11 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
                                           std::bind(&PicassoEyes::serviceNextContour, 
                                           this, std::placeholders::_1, std::placeholders::_2));
 
+  servTotalLines_ = this->create_service<picasso_bot::srv::GetTotalLines>("/total_lines", 
+                                          std::bind(&PicassoEyes::serviceGetTotalLines, 
+                                          this, std::placeholders::_1, std::placeholders::_2));
+                                          
+
   serviceShutdown_ = this->create_service<std_srvs::srv::Trigger>("/shutdown_node", 
                                           std::bind(&PicassoEyes::serviceShutdown, 
                                           this, std::placeholders::_1, std::placeholders::_2));
@@ -142,6 +147,8 @@ void PicassoEyes::serviceDiscardImage(const std_srvs::srv::Trigger::Request::Sha
 
 void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request::SharedPtr request,
                                     std_srvs::srv::Trigger::Response::SharedPtr response) {
+  contourOrder_.clear();
+  contourOrderIndex_ = 0;
   std::string errorStart = "Cannot generate toolpath:";
   cv::Mat localImage = capturedImage_.clone();
 
@@ -173,8 +180,8 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
   std::chrono::duration<double> duration = std::chrono::system_clock::now() - startTime;
   double solveTime = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
 
+  contourOrder_.reserve(toolPaths_.size());
   contourOrder_ = salesmanSolver_->getTravelOrder();
-  contourOrderIndex_ = 0;
   
   if (contourOrder_.empty()) {
     RCLCPP_WARN(this->get_logger(), "%s empty draw order", errorStart.c_str());
@@ -188,6 +195,21 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
   return;
 }
 
+void PicassoEyes::serviceGetTotalLines(const picasso_bot::srv::GetTotalLines::Request::SharedPtr request, picasso_bot::srv::GetTotalLines::Response::SharedPtr response) {
+  std::string errorStart = "Cannot get total lines:";
+  if (contourOrder_.empty()) {
+    response->success = false;
+    response->amount = 0;
+    RCLCPP_WARN(this->get_logger(), "%s no toolpath generated!", errorStart.c_str());
+
+    return;
+
+  } else {
+    response->success = true;
+    response->amount = contourOrder_.size();
+  }
+}
+
 void PicassoEyes::serviceNextContour(const picasso_bot::srv::GetPoseArray::Request::SharedPtr request, 
                                       picasso_bot::srv::GetPoseArray::Response::SharedPtr response) {
   std::string errorStart = "Cannot get next contour:";
@@ -197,7 +219,7 @@ void PicassoEyes::serviceNextContour(const picasso_bot::srv::GetPoseArray::Reque
     response->poses = geometry_msgs::msg::PoseArray();
 
     if (contourOrder_.empty()) {
-      RCLCPP_WARN(this->get_logger(), "%s empty draw order", errorStart.c_str());
+      RCLCPP_WARN(this->get_logger(), "%s empty draw order!", errorStart.c_str());
 
     } else {
       RCLCPP_INFO(this->get_logger(), "%s contour complete!", errorStart.c_str());

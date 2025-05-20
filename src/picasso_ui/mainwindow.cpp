@@ -57,6 +57,12 @@ MainWindow::MainWindow(QWidget *parent)
     servPreviewSketch_ = this->create_client<picasso_bot::srv::GetImage>("/preview_sketch");
     servDiscardImage_ = this->create_client<std_srvs::srv::Trigger>("/discard_image");          // TO DO: add button
     servGenerateToolpath_ = this->create_client<std_srvs::srv::Trigger>("/generate_toolpath");  // TO DO: add button
+    
+    servConnectUR_ = this->create_client<std_srvs::srv::Trigger>("/connect_ur");
+    servStartDrawing_ = this->create_client<std_srvs::srv::Trigger>("/start_drawing");
+    servStopDrawing_ = this->create_client<std_srvs::srv::Trigger>("/stop_drawing");
+    servHomePose_ = this->create_client<std_srvs::srv::Trigger>("/home_pose");
+    servEStop_ = this->create_client<std_srvs::srv::Trigger>("/e_stop");
 }
 
 MainWindow::~MainWindow() {
@@ -74,39 +80,8 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
-
-void MainWindow::startCamera() {
-
-    //serv_toggleCameraRequest();
-    serviceRequest<std_srvs::srv::Trigger>(servCamerafeed_, this->shared_from_this());
-
-    // Code moved to constructor to set QLabel as a member variable - Joseph
-
-    RCLCPP_INFO(this->get_logger(), "Camera started. Waiting for images..."); 
-}
-
-void MainWindow::connectUR3() {
-    QString command = "ros2 launch picasso_arms ur3.launch.py";
-    QProcess *process = new QProcess(this);
-    process->start(command);
-}
-
-
-void MainWindow::captureImage() {
-    // Changed to use eyes service, no need to save image - Joseph
-    serviceRequest<std_srvs::srv::Trigger>(servCaptureImage_, this->shared_from_this());
-}
-
-void MainWindow::sendEmergencyStop() {
-   std_msgs::msg::Bool msg;
-   msg.data = true;
-   estop_publisher->publish(msg);
-}
-
-
 void MainWindow::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
-    // Changed to simplify, fix dangling pointer and use QLabel member variable - Joseph
     if (msg->width == 0 && msg->height == 0) {
         return;
     }
@@ -130,8 +105,114 @@ void MainWindow::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
     });
 }
 
+void MainWindow::startCamera() {
+    serviceRequest<std_srvs::srv::Trigger>(servCamerafeed_, this->shared_from_this());
+
+    RCLCPP_INFO(this->get_logger(), "Camera started. Waiting for images..."); 
+}
+
+void MainWindow::captureImage() {
+    serviceRequest<std_srvs::srv::Trigger>(servCaptureImage_, this->shared_from_this());
+}
+
+void MainWindow::discardImage() {
+    serviceRequest<std_srvs::srv::Trigger>(servDiscardImage_, this->shared_from_this());
+}
+
+void MainWindow::serviceSketchRequest(void) {
+    serviceWait<picasso_bot::srv::GetImage>(servPreviewSketch_);
+
+    sketchMsg_ = sensor_msgs::msg::Image();
+
+    auto request = std::make_shared<picasso_bot::srv::GetImage::Request>();
+    auto weak_this = std::weak_ptr<MainWindow>(
+        std::static_pointer_cast<MainWindow>(this->shared_from_this()));
+
+    servPreviewSketch_->async_send_request(request,
+        [weak_this, this](rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future) {
+
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            shared_this->serviceSketchRespose(future);
+
+        } else {
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service.");
+        }
+    });
+    serviceLogName_ = std::string(servPreviewSketch_->get_service_name());
+    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", serviceLogName_.c_str());
+}
+
+void MainWindow::serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future) {
+    auto result = future.get();
+    serviceLogName_ = std::string(servPreviewSketch_->get_service_name());
+    if (result->success) {
+        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", serviceLogName_.c_str());
+        sketchMsg_ = result->image;
+
+    } else {
+        RCLCPP_WARN(this->get_logger(), "Service '%s' failed.", serviceLogName_.c_str());
+    }
+}
+
+void MainWindow::generateToolpath() {
+    serviceRequest<std_srvs::srv::Trigger>(servGenerateToolpath_, this->shared_from_this());
+}
+
+void MainWindow::serviceShutdownEyesRequest(void) {
+    serviceWait<std_srvs::srv::Trigger>(servEyesShutdown_);
+    
+    eyesShutdownComplete_ = false;
+    serviceLogName_ = std::string(servPreviewSketch_->get_service_name());
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+    auto weak_this = std::weak_ptr<MainWindow>(
+        std::static_pointer_cast<MainWindow>(this->shared_from_this()));
+
+    servEyesShutdown_->async_send_request(request,
+        [weak_this, this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
+            
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            shared_this->serviceShutdownEyesRespose(future);
+
+        } else {
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", serviceLogName_.c_str());
+        }
+    });
+
+    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", serviceLogName_.c_str());
+}
+
+void MainWindow::serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
+    auto result = future.get();
+    serviceLogName_ = std::string(servPreviewSketch_->get_service_name());
+    if (result->success) {
+        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", serviceLogName_.c_str());
+        eyesShutdownComplete_ = true;
+
+    } else {
+        RCLCPP_WARN(this->get_logger(), "Service '%s' failed: %s", serviceLogName_.c_str(), result->message);
+    }
+}
+
+void MainWindow::connectUR3() {
+    serviceRequest<std_srvs::srv::Trigger>(servEStop_, this->shared_from_this());
+}
+
+void MainWindow::sendEmergencyStop() {
+   serviceRequest<std_srvs::srv::Trigger>(servEStop_, this->shared_from_this());
+}
+
+void MainWindow::startDrawing() {
+    serviceRequest<std_srvs::srv::Trigger>(servStartDrawing_, this->shared_from_this());
+}
+
+void MainWindow::stopDrawing() {
+    serviceRequest<std_srvs::srv::Trigger>(servStopDrawing_, this->shared_from_this());
+}
+
 void MainWindow::previewSketch() {
-    // CHanged to fix dangling pointer and use QLabel member variable - Joseph
     serviceSketchRequest();
 
     while (sketchMsg_ == sensor_msgs::msg::Image()) {   // Wait for sketch to be received
@@ -162,88 +243,4 @@ void MainWindow::previewSketch() {
 
         sharedThis->sketchLabel_->setPixmap(QPixmap::fromImage(qImage));
     });
-}
-
-void MainWindow::serviceSketchRequest(void) {
-    serviceWait<picasso_bot::srv::GetImage>(servPreviewSketch_);
-
-    sketchMsg_ = sensor_msgs::msg::Image();
-
-    auto request = std::make_shared<picasso_bot::srv::GetImage::Request>();
-    auto weak_this = std::weak_ptr<MainWindow>(
-        std::static_pointer_cast<MainWindow>(this->shared_from_this()));
-
-    servPreviewSketch_->async_send_request(request,
-        [weak_this, this](rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future) {
-
-        auto shared_this = weak_this.lock();
-        if (shared_this) {
-            shared_this->serviceSketchRespose(future);
-
-        } else {
-            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", std::string(servPreviewSketch_->get_service_name()));
-        }
-    });
-
-    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servPreviewSketch_->get_service_name()));
-}
-
-void MainWindow::serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future) {
-    auto result = future.get();
-    if (result->success) {
-        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", std::string(servPreviewSketch_->get_service_name()));
-        sketchMsg_ = result->image;
-
-    } else {
-        RCLCPP_WARN(this->get_logger(), "Service '%s' failed.", std::string(servPreviewSketch_->get_service_name()));
-    }
-}
-
-void MainWindow::serviceShutdownEyesRequest(void) {
-    serviceWait<std_srvs::srv::Trigger>(servEyesShutdown_);
-    
-    eyesShutdownComplete_ = false;
-
-    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
-    auto weak_this = std::weak_ptr<MainWindow>(
-        std::static_pointer_cast<MainWindow>(this->shared_from_this()));
-
-    servEyesShutdown_->async_send_request(request,
-        [weak_this, this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
-            
-        auto shared_this = weak_this.lock();
-        if (shared_this) {
-            shared_this->serviceShutdownEyesRespose(future);
-
-        } else {
-            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", std::string(servEyesShutdown_->get_service_name()));
-        }
-    });
-
-    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servEyesShutdown_->get_service_name()));
-}
-
-void MainWindow::serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
-    auto result = future.get();
-    if (result->success) {
-        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", std::string(servEyesShutdown_->get_service_name()));
-        eyesShutdownComplete_ = true;
-
-    } else {
-        RCLCPP_WARN(this->get_logger(), "Service '%s' failed: %s", std::string(servEyesShutdown_->get_service_name()), result->message);
-    }
-}
-
-void MainWindow::discardImage() {
-    serviceRequest<std_srvs::srv::Trigger>(servDiscardImage_, this->shared_from_this());
-}
-
-void MainWindow::generateToolpath() {
-    serviceRequest<std_srvs::srv::Trigger>(servGenerateToolpath_, this->shared_from_this());
-}
-
-void MainWindow::startDrawing() {
-    auto client = this->create_client<std_srvs::srv::Trigger>("start_drawing");
-    serviceRequest<std_srvs::srv::Trigger>(client, this->shared_from_this());
-    //serviceRequest<std_srvs::srv::Trigger>(servStartDrawing_, this->shared_from_this());
 }

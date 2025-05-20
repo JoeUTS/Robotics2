@@ -27,6 +27,7 @@
 #include "VisulisationSettings.h"
 #include "picasso_bot/srv/get_pose_array.hpp"
 #include "picasso_bot/srv/get_image.hpp"
+#include "picasso_bot/srv/get_total_lines.hpp"
 
 /*
 // Camera node: (Will need to launch this with launcher)
@@ -53,6 +54,7 @@ private:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;           // Discard captured image/sketch.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_;       // Generate draw order.
   rclcpp::Service<picasso_bot::srv::GetPoseArray>::SharedPtr servNextContour_;    // Send next contour to draw.
+  rclcpp::Service<picasso_bot::srv::GetTotalLines>::SharedPtr servTotalLines_;    // Get total lines in image.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr serviceShutdown_;            // Shutdown node.
   
   // Class objects
@@ -97,7 +99,10 @@ private:
   /// @brief Service callback for drawing sketch.
   void serviceGenerateToolpath(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
 
-  /// @brief Service callback for changing the published contour. - SHOULD THIS BE A CUSTOM SERVICE TO RESPOND WITH A POSEARRAY?
+  /// @brief Service callback for getting total lines in image.
+  void serviceGetTotalLines(const picasso_bot::srv::GetTotalLines::Request::SharedPtr request, picasso_bot::srv::GetTotalLines::Response::SharedPtr response);
+  
+  /// @brief Service callback for changing the published contour.
   void serviceNextContour(const picasso_bot::srv::GetPoseArray::Request::SharedPtr request, picasso_bot::srv::GetPoseArray::Response::SharedPtr response);
 
   /// @brief Service callback for shutting down node.
