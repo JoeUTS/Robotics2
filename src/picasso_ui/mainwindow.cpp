@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+//Regenerate UI file: (replace daniel with your username)
+// uic /home/daniel/git/Robotics2/src/picasso_ui/mainwindow.ui -o /home/daniel/git/Robotics2/src/picasso_ui/ui_mainwindow.h
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), Node("picaso_ui"), ui(new Ui::MainWindow)

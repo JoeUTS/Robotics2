@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>2076</width>
-    <height>1286</height>
+    <width>1339</width>
+    <height>575</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -20,6 +20,12 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="minimumSize">
+    <size>
+     <width>1339</width>
+     <height>531</height>
+    </size>
+   </property>
    <widget class="QWidget" name="horizontalLayoutWidget">
     <property name="geometry">
      <rect>
@@ -254,7 +260,7 @@ border-radius: 10px;</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>2076</width>
+     <width>1339</width>
      <height>22</height>
     </rect>
    </property>
