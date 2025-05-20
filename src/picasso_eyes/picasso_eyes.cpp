@@ -113,11 +113,18 @@ void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::Sha
 
 void PicassoEyes::servicePreviewSketch(const picasso_bot::srv::GetImage::Request::SharedPtr request, 
                                       picasso_bot::srv::GetImage::Response::SharedPtr response) {
+  if (imageCaptured_ == false) {
+    response->success = false;
+    RCLCPP_INFO(this->get_logger(), "No image captured.");
+    return;
+  }
+  
   cv::Mat localImage = capturedImage_.clone();
   localImage = generateSketch(localImage, 1, 3, 3);
   
   if (localImage.empty()) {
     response->success = false;
+    response->image = sensor_msgs::msg::Image();
     RCLCPP_INFO(this->get_logger(), "Failed to generate sketch.");
     
   } else {
@@ -197,6 +204,7 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
 
 void PicassoEyes::serviceGetTotalLines(const picasso_bot::srv::GetTotalLines::Request::SharedPtr request, picasso_bot::srv::GetTotalLines::Response::SharedPtr response) {
   std::string errorStart = "Cannot get total lines:";
+  
   if (contourOrder_.empty()) {
     response->success = false;
     response->amount = 0;
@@ -269,7 +277,7 @@ std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &i
     return toolPaths;
   }
 
-  if (image.dims > 1) { // Assume sketch not generated.
+  if (image.dims > 1) { // Assume sketch not generated. This is being called despite it being single channel.
     image = generateSketch(image);
   }
 

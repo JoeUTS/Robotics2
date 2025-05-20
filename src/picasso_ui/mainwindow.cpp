@@ -197,7 +197,7 @@ void MainWindow::serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigge
 }
 
 void MainWindow::connectUR3() {
-    serviceRequest<std_srvs::srv::Trigger>(servEStop_, this->shared_from_this());
+    serviceRequest<std_srvs::srv::Trigger>(servConnectUR_, this->shared_from_this());
 }
 
 void MainWindow::sendEmergencyStop() {

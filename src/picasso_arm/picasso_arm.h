@@ -22,12 +22,13 @@
 
 class MoveControl {
 public:
-  moveit::planning_interface::MoveGroupInterface groupInterface_;
+  MoveControl(const std::shared_ptr<rclcpp::Node> owningNode, 
+              const std::string moveGroupName, 
+              const std::string endEffectorLink);
 
-  MoveControl(const std::shared_ptr<rclcpp::Node> &owningNode, 
-              const std::string &moveGroupName, 
-              const std::string &endEffectorLink);
+  std::unique_ptr<moveit::planning_interface::MoveGroupInterface> groupInterface_;
 
+  
   /// @brief Plan trajectory to the input goal pose.
   /// @param startPose The start pose to set for the end effector.
   /// @param goalPose The goal pose to set for the end effector.

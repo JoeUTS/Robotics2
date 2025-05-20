@@ -9,25 +9,41 @@
 #include <vector>
 
 
-using moveit::planning_interface::MoveGroupInterface;
+//using moveit::planning_interface::MoveGroupInterface;
 
-MoveControl::MoveControl(const std::shared_ptr<rclcpp::Node> &owningNode, 
-                        const std::string &moveGroupName, 
-                        const  std::string &endEffectorLink) : 
-                                owningNode_(owningNode), moveGroupName_(moveGroupName), 
-                                groupInterface_(owningNode, moveGroupName), 
+MoveControl::MoveControl(const std::shared_ptr<rclcpp::Node> owningNode, 
+                         const std::string moveGroupName, 
+                         const std::string endEffectorLink) : 
+                                owningNode_(owningNode), 
+                                moveGroupName_(moveGroupName), 
                                 endEffectorLink_(endEffectorLink) {
 
-    kinematicModel_->getJointModelGroup(moveGroupName_);
-    groupInterface_.setEndEffectorLink(endEffectorLink_);
-    groupInterface_.startStateMonitor();
-    groupInterface_.setNumPlanningAttempts(5);
-    groupInterface_.setPlanningTime(5.0);                          // [s] 5 sec
-    groupInterface_.setGoalPositionTolerance(5e-5);                // [m] 5mm
-    groupInterface_.setGoalOrientationTolerance(5 * M_PI / 180);   // [rad] 5 deg
-    groupInterface_.setGoalJointTolerance(5 * M_PI / 180);         // [rad] 5 deg
+    try {
+        groupInterface_ = std::make_unique<moveit::planning_interface::MoveGroupInterface>(owningNode_, moveGroupName_);
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(owningNode_->get_logger(), "Failed to initialize MoveGroupInterface: %s", e.what());
+        return;
+    }
 
-    kinematicModel_ = groupInterface_.getRobotModel();
+    // = moveit::planning_interface::MoveGroupInterface(owningNode, moveGroupName_);
+    groupInterface_->setEndEffectorLink(endEffectorLink_);
+    groupInterface_->startStateMonitor();
+    groupInterface_->setNumPlanningAttempts(5);
+    groupInterface_->setPlanningTime(5.0);                          // [s] 5 sec
+    groupInterface_->setGoalPositionTolerance(5e-5);                // [m] 5mm
+    groupInterface_->setGoalOrientationTolerance(5 * M_PI / 180);   // [rad] 5 deg
+    groupInterface_->setGoalJointTolerance(5 * M_PI / 180);         // [rad] 5 deg
+
+    kinematicModel_ = groupInterface_->getRobotModel();
+    if (!kinematicModel_) {
+        RCLCPP_ERROR(owningNode_->get_logger(), "Failed to get robot model from MoveGroupInterface.");
+        return;
+    }
+
+    if (!kinematicModel_->getJointModelGroup(moveGroupName_)) {
+        RCLCPP_ERROR(owningNode_->get_logger(), "Failed to get joint model group '%s'. Check your SRDF.", moveGroupName_.c_str());
+        return;
+    }
 
     RCLCPP_INFO(owningNode_->get_logger(), "Move Controller initialized.");
 }
@@ -66,21 +82,21 @@ bool MoveControl::planTrajectoryPoint(geometry_msgs::msg::Pose &startPose,
         return false;
     }
     
-    groupInterface_.setPoseTarget(goalPose);
+    groupInterface_->setPoseTarget(goalPose);
     moveit::core::RobotState startState(kinematicModel_);
     poseToRobotState(startPose, startState);
-    groupInterface_.setStartState(startState);
+    groupInterface_->setStartState(startState);
  
     // Create a plan
     auto const [success, calulatedPlan] = [this]{
         moveit::planning_interface::MoveGroupInterface::Plan msg;
-        auto const ok = static_cast<bool>(groupInterface_.plan(msg));
+        auto const ok = static_cast<bool>(groupInterface_->plan(msg));
         return std::make_pair(ok, msg);
     }();
 
     if (success == moveit::core::MoveItErrorCode::SUCCESS) {
         plan = calulatedPlan;
-        groupInterface_.setStartStateToCurrentState();
+        groupInterface_->setStartStateToCurrentState();
         RCLCPP_INFO(owningNode_->get_logger(), "Planning successful!");
 
         return true;
@@ -121,9 +137,9 @@ bool MoveControl::planTrajectoryPath(geometry_msgs::msg::Pose &startPose,
     // Get starting state.
     moveit::core::RobotState startState(kinematicModel_);
     poseToRobotState(startPose, startState);
-    groupInterface_.setStartState(startState);
+    groupInterface_->setStartState(startState);
 
-    const double completness = groupInterface_.computeCartesianPath(waypoints.poses, 
+    const double completness = groupInterface_->computeCartesianPath(waypoints.poses, 
                                                                     trajStep, 
                                                                     maxVariance, 
                                                                     plan.trajectory_);
@@ -156,7 +172,7 @@ bool MoveControl::executePlan(moveit::planning_interface::MoveGroupInterface::Pl
     }
 
     // Execute plan
-    groupInterface_.execute(plan);
+    groupInterface_->execute(plan);
     RCLCPP_WARN(owningNode_->get_logger(), "Executing planned trajectory!");               
 
     return true;
@@ -230,7 +246,7 @@ void PicassoArm::drawImage(void) {
 
         RCLCPP_ERROR(this->get_logger(), "Drawing line %zu of %zu", currentLine, totalLines_);
         moveit::planning_interface::MoveGroupInterface::Plan plan;
-        geometry_msgs::msg::Pose startPose = moveController_->groupInterface_.getCurrentPose().pose;
+        geometry_msgs::msg::Pose startPose = moveController_->groupInterface_->getCurrentPose().pose;
         success = moveController_->planTrajectoryPath(startPose, toolPathMsg_, plan);
 
         if (!success) {
@@ -326,7 +342,7 @@ while (contourMsg.poses.size() > index) {
 void PicassoArm::serviceConnectUR(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
     response->success = true;
     // TO DO: are there any other things we need to connect to?
-    moveController_ = std::make_shared<MoveControl>(shared_from_this(), 
+    moveController_ = std::make_shared<MoveControl>(this->shared_from_this(), 
                                                     moveGroupName_,
                                                     endEffectorLink_);
     
@@ -354,7 +370,7 @@ void PicassoArm::serviceMoveToHome(const std_srvs::srv::Trigger::Request::Shared
 
 void PicassoArm::serviceEStop(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
     response->success = true;
-    moveController_->groupInterface_.stop(); // Stop the robot
+    moveController_->groupInterface_->stop(); // Stop the robot
     RCLCPP_WARN(this->get_logger(), "E-stop activated.");
 }
 
@@ -405,7 +421,6 @@ void PicassoArm::serviceTotalLinesRespose(rclcpp::Client<picasso_bot::srv::GetTo
 void PicassoArm::serviceNextContourRequest(void) {
     serviceLogName_ = std::string(servTotalLines_->get_service_name());
     toolPathMsg_ = geometry_msgs::msg::PoseArray();
-    prevContourExists_ = false;
     contourResponce_ = false;
 
     serviceWait<picasso_bot::srv::GetPoseArray>(servNextContour_);
@@ -436,6 +451,7 @@ void PicassoArm::serviceNextContourRespose(rclcpp::Client<picasso_bot::srv::GetP
     contourResponce_ = true;
 
     if (result->success) {
+        toolPathMsg_ = result->poses;
         RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", serviceLogName_.c_str());
 
     } else {
