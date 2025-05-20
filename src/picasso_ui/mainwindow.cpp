@@ -35,8 +35,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->captureImage, &QPushButton::clicked, this, &MainWindow::captureImage);
     connect(ui->connectUR3, &QPushButton::clicked, this, &MainWindow::connectUR3);
     connect(ui->previewSketch, &QPushButton::clicked, this, &MainWindow::previewSketch);
-    connect(ui->discardImage , &QPushButton::clicked, this, &MainWindow::servDiscardImage_);
-    connect(ui->generateToolpath , &QPushButton::clicked, this, &MainWindow::servGenerateToolpath_);
+    connect(ui->discardImage , &QPushButton::clicked, this, &MainWindow::servDiscardImage);
+    connect(ui->generateToolpath , &QPushButton::clicked, this, &MainWindow::servGenerateToolpath);
     // connect(ui->eStopButton, &QPushButton::clicked, this, &MainWindow::sendEmergencyStop);
 
 
@@ -92,6 +92,14 @@ void MainWindow::connectUR3() {
 void MainWindow::captureImage() {
     // Changed to use eyes service, no need to save image - Joseph
     serviceRequest<std_srvs::srv::Trigger>(servCaptureImage_, this->shared_from_this());
+}
+
+void MainWindow::servDiscardImage() {
+    serviceRequest<std_srvs::srv::Trigger>(servDiscardImage_, this->shared_from_this());
+}
+
+void MainWindow::servGenerateToolpath() {
+    serviceRequest<std_srvs::srv::Trigger>(servGenerateToolpath_, this->shared_from_this());
 }
 
 void MainWindow::sendEmergencyStop() {
@@ -178,21 +186,21 @@ void MainWindow::serviceSketchRequest(void) {
             shared_this->serviceSketchRespose(future);
 
         } else {
-            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", std::string(servPreviewSketch_->get_service_name()));
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", std::string(servPreviewSketch_->get_service_name()).c_str());
         }
     });
 
-    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servPreviewSketch_->get_service_name()));
+    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servPreviewSketch_->get_service_name()).c_str());
 }
 
 void MainWindow::serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>::SharedFuture future) {
     auto result = future.get();
     if (result->success) {
-        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", std::string(servPreviewSketch_->get_service_name()));
+        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", std::string(servPreviewSketch_->get_service_name()).c_str());
         sketchMsg_ = result->image;
 
     } else {
-        RCLCPP_WARN(this->get_logger(), "Service '%s' failed.", std::string(servPreviewSketch_->get_service_name()));
+        RCLCPP_WARN(this->get_logger(), "Service '%s' failed.", std::string(servPreviewSketch_->get_service_name()).c_str());
     }
 }
 
@@ -213,21 +221,21 @@ void MainWindow::serviceShutdownEyesRequest(void) {
             shared_this->serviceShutdownEyesRespose(future);
 
         } else {
-            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", std::string(servEyesShutdown_->get_service_name()));
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", std::string(servEyesShutdown_->get_service_name()).c_str());
         }
     });
 
-    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servEyesShutdown_->get_service_name()));
+    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servEyesShutdown_->get_service_name()).c_str());
 }
 
 void MainWindow::serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) {
     auto result = future.get();
     if (result->success) {
-        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", std::string(servEyesShutdown_->get_service_name()));
+        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", std::string(servEyesShutdown_->get_service_name()).c_str());
         eyesShutdownComplete_ = true;
 
     } else {
-        RCLCPP_WARN(this->get_logger(), "Service '%s' failed: %s", std::string(servEyesShutdown_->get_service_name()), result->message);
+        RCLCPP_WARN(this->get_logger(), "Service '%s' failed: %s", std::string(servEyesShutdown_->get_service_name()).c_str(), result->message.c_str());
     }
 }
 

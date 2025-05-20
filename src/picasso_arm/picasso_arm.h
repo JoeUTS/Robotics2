@@ -26,7 +26,7 @@ public:
   void getCurrentPose(); // Declare setCurrentState()
   void getGoalPose(); // Declare moveRandomly()
   void moveToNextPose(); // Declare moveToNextPose()
-  void cartesianPath(); // Declare cartesianPath()
+  bool planCartesianPath(); // Declare cartesianPath()
   void startExecutor(); // Declare startExecutor()
   void toolpath_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg); // Declare toolpath_callback()
 
@@ -40,6 +40,7 @@ private:
   //std::shared_ptr<PicassoEyes> eyes_;                // Pointer to the Eyes system
 
   std::vector<geometry_msgs::msg::Point> target_points_; // List of target points to move through
+  geometry_msgs::msg::Pose current_pose;
   size_t current_target_index_ = 0;
 
 
@@ -54,6 +55,12 @@ private:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servEStop;               // E-stop
   
   rclcpp::Client<picasso_bot::srv::GetPoseArray>::SharedPtr servNextContour_; // Gets the next contour to draw
+
+  std::vector<geometry_msgs::msg::Pose> fetchWaypoints();
+  bool planCartesianPath(const std::vector<geometry_msgs::msg::Pose> &waypoints,
+                       moveit_msgs::msg::RobotTrajectory &trajectory);
+
+  bool executeTrajectory(const moveit_msgs::msg::RobotTrajectory& trajectory);
 
   void serviceStartDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
   void serviceStopDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);

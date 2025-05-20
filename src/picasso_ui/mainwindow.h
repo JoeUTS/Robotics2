@@ -49,6 +49,8 @@ private slots:
     void captureImage();
     void sendEmergencyStop();
     void previewSketch();
+    void servDiscardImage();
+    void servGenerateToolpath();
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
     
 

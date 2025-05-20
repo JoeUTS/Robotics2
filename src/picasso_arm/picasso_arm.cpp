@@ -17,7 +17,7 @@ PicassoArm::PicassoArm(void) : Node("picasso_arm") {
 
     // timer_ = this->create_wall_timer(
     //     std::chrono::seconds(5), 
-    //     std::bind(&PicassoArm::cartesianPath, this) 
+    //     std::bind(&PicassoArm::planCartesianPath, this) 
     // );
 
     servStartDrawing_ = this->create_service<std_srvs::srv::Trigger>("/start_drawing", 
@@ -37,6 +37,7 @@ PicassoArm::PicassoArm(void) : Node("picasso_arm") {
                                     this, std::placeholders::_1, std::placeholders::_2));
 
     servNextContour_ = this->create_client<picasso_bot::srv::GetPoseArray>("/next_contour");
+
 };
 
 
@@ -58,77 +59,74 @@ void PicassoArm::toolpath_callback(const geometry_msgs::msg::PoseArray::SharedPt
     }
 }
 
-/*
-How to use below service:
-// Service already set up.
+std::vector<geometry_msgs::msg::Pose> PicassoArm::fetchWaypoints() {
+    std::vector<geometry_msgs::msg::Pose> waypoints;
 
-geometry_msgs::msg::PoseArray contourMsg = getNextContour();   // Request next contour
+    // Get current pose as the starting waypoint
+    auto move_group = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
+    geometry_msgs::msg::Pose current_pose = move_group.getCurrentPose().pose;
+    waypoints.push_back(current_pose);
+    RCLCPP_INFO(this->get_logger(), "Current pose added as starting waypoint.");
 
-if (contourMsg.poses.size() == 0) {
-    // No contour to receive and/or end of contours.
-}
-
-// contourMsg will contain a header and a vector of geometry_msgs::msg::Pose
-
-// to access poses:
-geometry_msgs::msg::Pose goalPose = contourMsg.poses.at(X); // where X is the index of the goal pose
-
-// if you wanted a function that itterates though the list:
-while (contourMsg.poses.size() > index) {
-    geometry_msgs::msg::Pose goalPose = contourMsg.poses.at(index);
-    index++;
-}
-
-*/
-void PicassoArm::cartesianPath(){
-
-    //Initiate node for CartesianPath
-    auto extra_node = std::make_shared<rclcpp::Node>("my_extra_node");
-    rclcpp::executors::SingleThreadedExecutor executor;
-    executor.add_node(extra_node);
-    auto spinner = std::thread([&executor]() { executor.spin(); });
-
-    using moveit::planning_interface::MoveGroupInterface;
-    auto move_group_interface = MoveGroupInterface(extra_node, "ur_manipulator");
-
-    auto const end_effector_pose = move_group_interface.getCurrentPose();
-
-    RCLCPP_INFO(this->get_logger(), "Starting Cartesian path movement.");
-
-    // Get the latest contour (calls your existing service + fills toolPathMsg_)
-    auto path = getNextContour();
-
-    if (path.poses.empty()) {
-        RCLCPP_WARN(this->get_logger(), "No waypoints received. Aborting Cartesian move.");
-        return;
+    // Get the latest contour
+    auto pathMsg = getNextContour();
+    if (pathMsg.poses.empty()) {
+        RCLCPP_WARN(this->get_logger(), "No contour received. Returning current pose only.");
+        return waypoints;
     }
 
-    auto move_group = MoveGroupInterface(extra_node, "ur_manipulator");
+    // Append all poses from contour
+    waypoints.insert(waypoints.end(), pathMsg.poses.begin(), pathMsg.poses.end());
+    RCLCPP_INFO(this->get_logger(), "%zu waypoints fetched.", waypoints.size());
+
+    return waypoints;
+}
+
+bool PicassoArm::planCartesianPath(const std::vector<geometry_msgs::msg::Pose> &waypoints, moveit_msgs::msg::RobotTrajectory &trajectory) {
+    auto move_group = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
     move_group.setEndEffectorLink("wrist_link_3");
 
-    // Convert PoseArray to vector of waypoints
-    std::vector<geometry_msgs::msg::Pose> waypoints(path.poses.begin(), path.poses.end());
-
-    moveit_msgs::msg::RobotTrajectory trajectory;
-    double fraction = move_group.computeCartesianPath(waypoints, 0.01, 0.0, trajectory);  // 1cm step, no jump threshold
-
+    double fraction = move_group.computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
     if (fraction > 0.95) {
-        RCLCPP_INFO(this->get_logger(), "Cartesian path planned successfully (%.2f%%). Executing...", fraction * 100.0);
-        move_group.execute(trajectory);
+        RCLCPP_INFO(this->get_logger(), "Cartesian path planned successfully (%.2f%%).", fraction * 100.0);
+        return true;
     } else {
-        RCLCPP_WARN(this->get_logger(), "Cartesian path planning incomplete (%.2f%%). Not executing.", fraction * 100.0);
+        RCLCPP_WARN(this->get_logger(), "Cartesian path planning incomplete (%.2f%%).", fraction * 100.0);
+        return false;
     }
 }
+
+bool PicassoArm::executeTrajectory(const moveit_msgs::msg::RobotTrajectory &trajectory) {
+    auto move_group = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
+    move_group.setEndEffectorLink("wrist_link_3");
+
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    plan.trajectory_ = trajectory;
+    RCLCPP_INFO(this->get_logger(), "Executing trajectory...");
+
+    move_group.execute(plan);
+    return true;
+}
+
 
 void PicassoArm::serviceStartDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
     (void)request;  // Unused parameter
-    response->success = true;
-    RCLCPP_INFO(this->get_logger(), "Drawing start request received.");
-    
-    cartesianPath();
 
-    response->success = true;
-    response->message = "Started drawing (executed Cartesian path).";
+    auto waypoints = fetchWaypoints();
+    moveit_msgs::msg::RobotTrajectory trajectory;
+    
+    if (planCartesianPath(waypoints, trajectory)) {
+        if (executeTrajectory(trajectory)) {
+            response->success = true;
+            response->message = "Drawing started and path executed.";
+        } else {
+            response->success = false;
+            response->message = "Trajectory execution failed.";
+        }
+    } else {
+        response->success = false;
+        response->message = "Cartesian path planning failed.";
+    }
 }
 
 void PicassoArm::serviceStopDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
@@ -308,5 +306,68 @@ geometry_msgs::msg::PoseArray PicassoArm::getNextContour(void) {
      
 //     } else {
 //      RCLCPP_ERROR(this->get_logger(), "Planning failed!");
+//     }
+// }
+
+/*
+How to use below service:
+// Service already set up.
+
+geometry_msgs::msg::PoseArray contourMsg = getNextContour();   // Request next contour
+
+if (contourMsg.poses.size() == 0) {
+    // No contour to receive and/or end of contours.
+}
+
+// contourMsg will contain a header and a vector of geometry_msgs::msg::Pose
+
+// to access poses:
+geometry_msgs::msg::Pose goalPose = contourMsg.poses.at(X); // where X is the index of the goal pose
+
+// if you wanted a function that itterates though the list:
+while (contourMsg.poses.size() > index) {
+    geometry_msgs::msg::Pose goalPose = contourMsg.poses.at(index);
+    index++;
+}
+
+*/
+
+// get path function (void) - reutun vec<pose>
+// calculate traj function (vec<pose>) - return traj
+// move arm function (traj) - return bool
+// void PicassoArm::cartesianPath(){
+
+    
+
+//     using moveit::planning_interface::MoveGroupInterface;
+//     auto move_group_interface = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
+
+//     auto const end_effector_pose = move_group_interface.getCurrentPose();
+
+//     RCLCPP_INFO(this->get_logger(), "Starting Cartesian path movement.");
+
+//     // Get the latest contour (calls your existing service + fills toolPathMsg_)
+//     auto pathMsg = getNextContour();
+
+//     if (pathMsg.poses.empty()) {
+//         RCLCPP_WARN(this->get_logger(), "No waypoints received. Aborting Cartesian move.");
+//         return;
+//     }
+
+//     auto move_group = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
+//     move_group.setEndEffectorLink("wrist_link_3");
+
+//     // Convert PoseArray to vector of waypoints
+//     ///std::vector<geometry_msgs::msg::Pose> waypoints(path.poses);
+    
+
+//     moveit_msgs::msg::RobotTrajectory trajectory;
+//     double fraction = move_group.computeCartesianPath(pathMsg.poses, 0.01, 0.0, trajectory);  // 1cm step, no jump threshold
+
+//     if (fraction > 0.95) {
+//         RCLCPP_INFO(this->get_logger(), "Cartesian path planned successfully (%.2f%%). Executing...", fraction * 100.0);
+//         move_group.execute(trajectory);
+//     } else {
+//         RCLCPP_WARN(this->get_logger(), "Cartesian path planning incomplete (%.2f%%). Not executing.", fraction * 100.0);
 //     }
 // }
