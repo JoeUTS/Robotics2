@@ -3,3 +3,5 @@
 # Response
 bool success
 geometry_msgs/PoseArray poses
+uint16 line_id
+uint16 total_lines

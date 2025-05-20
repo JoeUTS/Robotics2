@@ -175,7 +175,7 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
   }
 
   // Perform TSP
-  RCLCPP_INFO(this->get_logger(), "Solving TSP...");
+  RCLCPP_INFO(this->get_logger(), "Solving TSP for %s toolpaths", std::to_string(toolPaths_.size()).c_str());
 
   if (salesmanSolver_ == NULL) {
     salesmanSolver_ = std::make_shared<SalesmanSolver>(this->shared_from_this());
@@ -183,11 +183,13 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
 
   salesmanSolver_->setContourList(toolPaths_);
   std::chrono::time_point<std::chrono::system_clock> startTime = std::chrono::system_clock::now();
-  salesmanSolver_->solve();
+  //salesmanSolver_->solve();
+  salesmanSolver_->solveTsp2OptWithOrientations();
   std::chrono::duration<double> duration = std::chrono::system_clock::now() - startTime;
   double solveTime = std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
 
-  contourOrder_.reserve(toolPaths_.size());
+  contourOrder_.clear();
+  contourOrder_.reserve(salesmanSolver_->getTravelOrder().size());
   contourOrder_ = salesmanSolver_->getTravelOrder();
   
   if (contourOrder_.empty()) {
@@ -196,7 +198,7 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
     
   } else {
     response->success = true;
-    RCLCPP_INFO(this->get_logger(), "Toolpath generated successfully, solve time: %.2f ms", solveTime / 1000);
+    RCLCPP_INFO(this->get_logger(), "Toolpath generated successfully, solve time: %.2f ms", (float)solveTime / 1000);
   }
 
   return;
@@ -206,15 +208,13 @@ void PicassoEyes::serviceGetTotalLines(const picasso_bot::srv::GetTotalLines::Re
   std::string errorStart = "Cannot get total lines:";
   
   if (contourOrder_.empty()) {
-    response->success = false;
     response->amount = 0;
+    response->success = false;
     RCLCPP_WARN(this->get_logger(), "%s no toolpath generated!", errorStart.c_str());
 
-    return;
-
   } else {
-    response->success = true;
     response->amount = contourOrder_.size();
+    response->success = true;
   }
 }
 
@@ -223,22 +223,33 @@ void PicassoEyes::serviceNextContour(const picasso_bot::srv::GetPoseArray::Reque
   std::string errorStart = "Cannot get next contour:";
 
   if (contourOrder_.empty() || contourOrderIndex_ == contourOrder_.size() - 1) {
-    response->success = false;
-    response->poses = geometry_msgs::msg::PoseArray();
-
     if (contourOrder_.empty()) {
       RCLCPP_WARN(this->get_logger(), "%s empty draw order!", errorStart.c_str());
 
     } else {
       RCLCPP_INFO(this->get_logger(), "%s contour complete!", errorStart.c_str());
     }
+
+    response->poses = geometry_msgs::msg::PoseArray();
+    response->success = false;
     
   } else {
-    response->success = true;
     std::shared_ptr<Contour> contour = toolPaths_.at(contourOrder_.at(contourOrderIndex_).second);
-    response->poses = contour.get()->getPath(); // NEED TO ALLOW FOR BACKWARDS PATHS!!
+    
     contourOrderIndex_++;
     RCLCPP_INFO(this->get_logger(), "Next contour retrieved.");
+
+    if (toolPaths_.at(contourOrder_.at(contourOrderIndex_).first)) {
+      response->poses = contour.get()->getPath();
+      
+    } else {
+      response->poses = contour.get()->getPathBackwards();
+    }
+
+    response->line_id = contourOrderIndex_;
+    response->total_lines = toolPaths_.size();
+
+    response->success = true;
   }
 }
 
@@ -277,7 +288,7 @@ std::map<int, std::shared_ptr<Contour>> PicassoEyes::generateToolpath(cv::Mat &i
     return toolPaths;
   }
 
-  if (image.dims > 1) { // Assume sketch not generated. This is being called despite it being single channel.
+  if (image.channels() > 1) { // Assume sketch not generated.
     image = generateSketch(image);
   }
 
@@ -322,29 +333,30 @@ cv::Mat PicassoEyes::generateSketch(cv::Mat &image, const int blurPasses, const 
     return cv::Mat();
   }
 
+  cv::Mat localImage = image.clone();
+
   // Remove background
   // TO DO
 
   // Apply blur.
   for (int i = 0; i < blurPasses; i++) {
-    imageController_->editImageBlurMedian(image, blurKernalSize);
-    imageController_->editImageBlurGaussian(image, blurKernalSize);
+    imageController_->editImageBlurMedian(localImage, blurKernalSize);
+    imageController_->editImageBlurGaussian(localImage, blurKernalSize);
   }
   
   // Reduce colour space.
-  imageController_->editImageQuantize(image, colourSteps);
+  imageController_->editImageQuantize(localImage, colourSteps);
 
   // Get edges.
-  cv::Mat edges = image.clone();
-  imageController_->editImageGreyscale(edges);
-  imageController_->detectEdges(edges, 0.1);
+  imageController_->editImageGreyscale(localImage);
+  imageController_->detectEdges(localImage, 0.1);
 
   if (showEdges) {
-    cv::imshow("Sketch Preview", edges);
+    cv::imshow("Sketch Preview", localImage);
     cv::waitKey(1);
   }
 
-  return edges;
+  return localImage;
 }
 
 geometry_msgs::msg::Quaternion PicassoEyes::rpyToQuaternion(const double roll, 

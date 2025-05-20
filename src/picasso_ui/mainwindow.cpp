@@ -45,6 +45,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     // ROS
     eyesShutdownComplete_ = false;
+    imageCaptured_ = false;
+    cameraConnected_ = false;
+    armConnected_ = false;
     sketchMsg_ = sensor_msgs::msg::Image();
 
     image_subscriber = this->create_subscription<sensor_msgs::msg::Image>(
@@ -107,16 +110,33 @@ void MainWindow::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 
 void MainWindow::startCamera() {
     serviceRequest<std_srvs::srv::Trigger>(servCamerafeed_, this->shared_from_this());
+    cameraConnected_ = !cameraConnected_;
 
-    RCLCPP_INFO(this->get_logger(), "Camera started. Waiting for images..."); 
+    if (cameraConnected_) {
+        RCLCPP_INFO(this->get_logger(), "Camera started. Waiting for images..."); 
+    } else {
+        RCLCPP_INFO(this->get_logger(), "Camera stopped.");
+    }
 }
 
 void MainWindow::captureImage() {
+    if (!cameraConnected_) {
+        RCLCPP_INFO(this->get_logger(), "Please connect camera first.");
+        return;
+    }
+    
     serviceRequest<std_srvs::srv::Trigger>(servCaptureImage_, this->shared_from_this());
+    imageCaptured_ = true;
 }
 
 void MainWindow::discardImage() {
+    if (!imageCaptured_) {
+        RCLCPP_INFO(this->get_logger(), "Please capture an image first.");
+        return;
+    }
+    
     serviceRequest<std_srvs::srv::Trigger>(servDiscardImage_, this->shared_from_this());
+    imageCaptured_ = false;
 }
 
 void MainWindow::serviceSketchRequest(void) {
@@ -156,6 +176,11 @@ void MainWindow::serviceSketchRespose(rclcpp::Client<picasso_bot::srv::GetImage>
 }
 
 void MainWindow::generateToolpath() {
+    if (!imageCaptured_) {
+        RCLCPP_INFO(this->get_logger(), "Please capture an image first.");
+        return;
+    }
+
     serviceRequest<std_srvs::srv::Trigger>(servGenerateToolpath_, this->shared_from_this());
 }
 
@@ -198,21 +223,42 @@ void MainWindow::serviceShutdownEyesRespose(rclcpp::Client<std_srvs::srv::Trigge
 
 void MainWindow::connectUR3() {
     serviceRequest<std_srvs::srv::Trigger>(servConnectUR_, this->shared_from_this());
+    armConnected_ = true;
 }
 
 void MainWindow::sendEmergencyStop() {
-   serviceRequest<std_srvs::srv::Trigger>(servEStop_, this->shared_from_this());
+    if (!armConnected_) {
+        RCLCPP_INFO(this->get_logger(), "Please connect arm first.");
+        return;
+    }
+
+    serviceRequest<std_srvs::srv::Trigger>(servEStop_, this->shared_from_this());
 }
 
 void MainWindow::startDrawing() {
+    if (!armConnected_) {
+        RCLCPP_INFO(this->get_logger(), "Please connect arm first.");
+        return;
+    }
+    
     serviceRequest<std_srvs::srv::Trigger>(servStartDrawing_, this->shared_from_this());
 }
 
 void MainWindow::stopDrawing() {
+    if (!armConnected_) {
+        RCLCPP_INFO(this->get_logger(), "Please connect arm first.");
+        return;
+    }
+
     serviceRequest<std_srvs::srv::Trigger>(servStopDrawing_, this->shared_from_this());
 }
 
 void MainWindow::previewSketch() {
+    if (!imageCaptured_) {
+        RCLCPP_INFO(this->get_logger(), "Please capture an image first.");
+        return;
+    }
+
     serviceSketchRequest();
 
     while (sketchMsg_ == sensor_msgs::msg::Image()) {   // Wait for sketch to be received

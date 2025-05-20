@@ -5,8 +5,9 @@
 #include <memory>
 #include <functional>
 #include <string>
-#include <iostream> // Should be using RCLCPP_INFO(this->get_logger(), "") or RCLCPP_INFO_STREAM(this->get_logger(), "") instead
+#include <iostream>
 #include <vector>
+#include <type_traits>
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
@@ -73,9 +74,6 @@ private:
   const std::string moveGroupName_;
   const std::string endEffectorLink_;
   std::shared_ptr<MoveControl> moveController_; // Move controller for arm movements.
-  rclcpp::TimerBase::SharedPtr timer_;  // Timer for periodic execution
-  std::vector<geometry_msgs::msg::Point> target_points_; // List of target points to move through
-  size_t current_target_index_ = 0;
 
   bool getNextContour(void);  // Get next contour from picasso eyes
   void drawImage(void);       // Draw image loop
@@ -92,7 +90,8 @@ private:
   bool contourResponce_;                        // Flag to indicate if the contour service has returned.
   bool totalLinesResponce_;                     // Flag to indicate if the total lines service has returned.
   geometry_msgs::msg::PoseArray toolPathMsg_;   // Received toolpath
-  unsigned long totalLines_;                    // Total number of lines to draw
+  unsigned int totalLines_;                     // Total number of lines to draw
+  unsigned int currentLine_;                    // Current line being drawn
   std::string serviceLogName_;                  // Holds name of service for logging.
 
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servConnectUR_;          // Connects to the UR robot
