@@ -228,10 +228,10 @@ border-radius: 10px;</string>
        <widget class="QWidget" name="gridLayoutWidget_3">
         <property name="geometry">
          <rect>
-          <x>20</x>
+          <x>10</x>
           <y>50</y>
-          <width>201</width>
-          <height>321</height>
+          <width>231</width>
+          <height>391</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout" rowminimumheight="0,0">
