@@ -6,14 +6,7 @@ SalesmanSolver::SalesmanSolver(std::shared_ptr<rclcpp::Node> parentNode)
 }
 
 void SalesmanSolver::setContourList(std::map<int, std::shared_ptr<Contour>> &contourList) {
-  contourList_.clear(); // Clear any existing data
-  
-  /*
-  This totally works but work smarter not harder and use caveman brain - Joseph
-  for (const auto& [key, value] : contourList) {
-    contourList_[key] = std::make_shared<Contour>(key); // Ensure Contour is created with the required argument
-  }
-  */
+  contourList_.clear();
   contourList_ = contourList;
 }
 
@@ -29,261 +22,338 @@ double SalesmanSolver::computeDistance(const geometry_msgs::msg::Point& a, const
   return std::hypot(b.x - a.x, b.y - a.y);
 }
 
-// void SalesmanSolver::solve() {
-//   travelOrder_.clear();
-
-//   if (contourList_.empty()) {
-//     if (parentNode_ != NULL) {
-//       RCLCPP_WARN(parentNode_->get_logger(), "Contour list is empty.");
-//     }
-    
-//     return;
-//   }
-
-//   std::vector<int> contourID;
-//   contourID.reserve(contourList_.size());  // Preallocating memory can increase code speed drastically with large vectors - Joseph
-//   for (const auto& [key, _] : contourList_) {
-//     contourID.push_back(key);
-//   }
-
-//   std::vector<int> bestOrder;
-//   bestOrder.reserve(contourID.size());
-//   double minDistance = std::numeric_limits<double>::max();
-
-//   do { 
-//     double totalDistance = 0.0;
-//     for (size_t i = 0; i < contourID.size() - 1; ++i) {
-//       auto from = contourList_.at(contourID[i])->getHead();
-//       auto to = contourList_.at(contourID[i + 1])->getHead();
-//       totalDistance += computeDistance(*from, *to);
-//     }
-
-//     if (totalDistance < minDistance) {
-//       minDistance = totalDistance;
-//       bestOrder = contourID;
-//     }
-//   } while (std::next_permutation(contourID.begin(), contourID.end()));
-
-//   for (int contourID : bestOrder) 
-//     bool direction = 
-//     travelOrder_.emplace_back(contourID, true); // 'true' indicates the contour is active
-//   }
-
-//   if (parentNode_ != NULL) {
-//     RCLCPP_INFO(parentNode_->get_logger(), "Total distance: %.2f", minDistance);
-//   }
-// }
 void SalesmanSolver::solve() {
- // RCLCPP_INFO(parentNode_->get_logger(), "Starting TSP solver...");
-  std::cout << "Starting TSP solver..." << std::endl << std::flush;
+  RCLCPP_INFO(parentNode_->get_logger(), "Starting TSP solver...");
   travelOrder_.clear();
 
-  
-
   if (contourList_.empty()) {
-      if (parentNode_ != NULL or parentNode_ != nullptr) {
-          RCLCPP_WARN(parentNode_->get_logger(), "Contour list is empty.");
-      }
-      std::cout << "Contour list is empty." << std::endl;
+      RCLCPP_WARN(parentNode_->get_logger(), "Cannot solve, contour list is empty.");
       return;
   }
 
   // Prepare data structures for recursive functions
-  std::vector<int> current_contour_order_ids; // Current permutation of contour IDs
-  std::map<int, bool> used_ids;               // Tracks which contour IDs have been used
-  for (const auto& [key, _] : contourList_) {
-      used_ids[key] = false; // Initialize all IDs as unused
+  permutationCurrent_ = 0;
+  permutationTotal_ = 1;
+  for (size_t i = 2; i <= contourList_.size(); ++i) {
+    permutationTotal_ *= i;
   }
 
-  double min_travel_distance = std::numeric_limits<double>::max(); // Minimum travel distance
-  std::vector<int> best_contour_order_ids;                         // Best order of contour IDs
-  std::vector<bool> best_directions;                               // Best directions for contours
+  std::vector<int> contourOrder;
+  std::map<int, bool> idUsed;
+  for (const auto& [key, _] : contourList_) {
+    idUsed[key] = false; 
+  }
 
-  std::cout << "Initialized data structures for TSP solver." << std::endl;
+  double distanceMin = std::numeric_limits<double>::max();
+  std::vector<int> orderBest;
+  std::vector<bool> directionBest;
 
-  // Generate all permutations and direction combinations
+  // Solve via brute force.
   generatePermutations(
-      contourList_,               // Original contours
-      current_contour_order_ids,  // Current permutation of contour IDs
-      used_ids,                   // Tracks used contour IDs
-      min_travel_distance,        // Minimum travel distance (updated by the function)
-      best_contour_order_ids,     // Best order of contour IDs (updated by the function)
-      best_directions             // Best directions for contours (updated by the function)
+    contourList_,
+    contourOrder,
+    idUsed,
+    distanceMin,
+    orderBest,
+    directionBest
   );
 
-  std::cout << "Finished generating permutations and directions." << std::endl;
-  std::cout << "Best travel distance: " << min_travel_distance << std::endl;
-  std::cout << "Best contour order: ";
-  for (int id : best_contour_order_ids) {
-      std::cout << id << " ";
-  }
-  std::cout << std::endl;
+  // Update travel order
+  for (int contourID : orderBest) {
+    bool direction = true;
 
-  std::cout << "Best directions: ";
-  for (bool dir : best_directions) {
-      std::cout << (dir ? "Forward " : "Backward ");
-  }
-  std::cout << std::endl;
-  // Populate the travelOrder_ with the best order and directions
-  for (int contourID : best_contour_order_ids) {
-    bool direction = true; // Default to forward
-    // If this is the first contour, set the direction to false
-    if (contourID == best_contour_order_ids[0]) {
+    if (contourID == orderBest[0]) {
       direction = false;
     }
     travelOrder_.emplace_back(contourID, direction);
   }
-  if (parentNode_ != NULL) {
-      RCLCPP_INFO(parentNode_->get_logger(), "Total distance: %.2f", min_travel_distance);
-  }
 }
 
-
-
-// Function to calculate the total travel distance for a given path (permutation of contour IDs + directions)
 double SalesmanSolver::calculateTotalTravelDistance(
-  const std::map<int, std::shared_ptr<Contour>>& original_contours, // Changed to map of shared_ptr<Contour>
-  const std::vector<int>& contour_order_ids,    // Stores map keys (contour IDs)
+  const std::map<int, std::shared_ptr<Contour>>& contours,
+  const std::vector<int>& contourOrder,
   const std::vector<bool>& directions)  // true = forwards, false = backwards
 {
-  double total_travel_distance = 0.0;
+  double distance = 0.0;
 
-  // Iterate through the contours in the specified order of IDs
-  for (size_t i = 0; i < contour_order_ids.size() - 1; ++i) {
-      int current_contour_id = contour_order_ids[i];
-      int next_contour_id = contour_order_ids[i + 1];
+  for (size_t i = 0; i < contourOrder.size() - 1; ++i) {
+    std::shared_ptr<Contour> contourCurrent = contours.at(contourOrder[i]);
+    std::shared_ptr<Contour> contourNext = contours.at(contourOrder[i + 1]);
 
-      // Access contours from the map using their IDs and get the shared_ptr
-      std::shared_ptr<Contour> current_contour = original_contours.at(current_contour_id);
-      std::shared_ptr<Contour> next_contour = original_contours.at(next_contour_id);
+    geometry_msgs::msg::Point pointStart;
+    if (directions[i] == true) {  // Forward
+      pointStart = *(contourCurrent->getTail());
 
-      // Determine the end point of the current contour based on its direction
-      geometry_msgs::msg::Point current_contour_end_point;
-      if (directions[i] == true) {
-          // Dereference the shared_ptr returned by getTail() to get the Point object
-          current_contour_end_point = *(current_contour->getTail());
-      } else { // Direction::Backward
-          // Dereference the shared_ptr returned by getHead() to get the Point object
-          current_contour_end_point = *(current_contour->getHead());
-      }
+    } else { // Backward
+      pointStart = *(contourCurrent->getHead());
+    }
 
-      // Determine the start point of the next contour based on its direction
-      geometry_msgs::msg::Point next_contour_start_point;
-      if (directions[i + 1] == true) {
-           // Dereference the shared_ptr returned by getHead() to get the Point object
-          next_contour_start_point = *(next_contour->getHead());
-      } else { // Direction::Backward
-           // Dereference the shared_ptr returned by getTail() to get the Point object
-          next_contour_start_point = *(next_contour->getTail());
-      }
+    geometry_msgs::msg::Point pointEnd;
+    if (directions[i + 1] == true) {  // Forward
+      pointEnd = *(contourNext->getHead());
 
-      // Add the distance between the end of the current contour and the start of the next contour
-      total_travel_distance += computeDistance(current_contour_end_point, next_contour_start_point);
+    } else { // Backward
+      pointEnd = *(contourNext->getTail());
+    }
+
+    distance += computeDistance(pointStart, pointEnd);
   }
 
-  return total_travel_distance;
+  return distance;
 }
 
-// Recursive function to generate all combinations of directions for a given contour order (of IDs)
 void SalesmanSolver::generateDirectionCombinations(
-  const std::map<int, std::shared_ptr<Contour>>& original_contours, // Changed to map of shared_ptr<Contour>
-  const std::vector<int>& contour_order_ids,    // Stores map keys (contour IDs)
-  std::vector<bool>& current_directions,
-  size_t k, // Current contour index in the order being considered (0 to num_contours-1)
-  double& min_travel_distance,
-  std::vector<int>& best_contour_order_ids, // Stores map keys (contour IDs)
-  std::vector<bool>& best_directions)
-{
-  // Base case: All contours in the order have been assigned a direction
-  if (k == original_contours.size()) {
-      // Calculate the travel distance for this specific path (order + directions)
-      double current_travel_distance = calculateTotalTravelDistance(
-          original_contours,
-          contour_order_ids,
-          current_directions);
-    
-       //   std::cout << "Evaluating directions: ";
-     //   for (bool dir : current_directions) {
-     //       std::cout << (dir ? "Forward " : "Backward ");
-     //   }
-      //  std::cout << "| Distance: " << current_travel_distance << std::endl;
+  const std::map<int, std::shared_ptr<Contour>>& contours,
+  const std::vector<int>& contourID,
+  std::vector<bool>& directions,
+  size_t contourIndex,
+  double& distanceMin,
+  std::vector<int>& orderBest,
+  std::vector<bool>& directionBest) {
 
-      // Check if this path is better than the current best
-      if (current_travel_distance < min_travel_distance) {
-          min_travel_distance = current_travel_distance;
-          best_contour_order_ids = contour_order_ids;
-          best_directions = current_directions;
-          std::cout << "New best path found with distance: " << min_travel_distance << std::endl;
-      }
-      return;
+  // Orders generated
+  if (contourIndex == contours.size()) {
+    RCLCPP_INFO(parentNode_->get_logger(), "Calculation step [%llu/%llu]", ++permutationCurrent_, permutationTotal_);
+
+    double current_travel_distance = calculateTotalTravelDistance(contours,
+                                                                  contourID,
+                                                                  directions);
+
+    if (current_travel_distance < distanceMin) {
+      distanceMin = current_travel_distance;
+      orderBest = contourID;
+      directionBest = directions;
+    }
+
+    return;
   }
 
-  // Recursive step: Try both directions for the current contour at index k in the order
-  // Try Forward
-  current_directions[k] = true;
+  // recursively generatate for both permutations
+  directions[contourIndex] = true;
   generateDirectionCombinations(
-      original_contours,
-      contour_order_ids,
-      current_directions,
-      k + 1,
-      min_travel_distance,
-      best_contour_order_ids,
-      best_directions);
+    contours,
+    contourID,
+    directions,
+    contourIndex + 1,
+    distanceMin,
+    orderBest,
+    directionBest);
 
-  // Try Backward
-  current_directions[k] = false;
+  directions[contourIndex] = false;
   generateDirectionCombinations(
-      original_contours,
-      contour_order_ids,
-      current_directions,
-      k + 1,
-      min_travel_distance,
-      best_contour_order_ids,
-      best_directions);
+    contours,
+    contourID,
+    directions,
+    contourIndex + 1,
+    distanceMin,
+    orderBest,
+    directionBest);
 }
 
-// Recursive function to generate all permutations of contour IDs
 void SalesmanSolver::generatePermutations(
-  const std::map<int, std::shared_ptr<Contour>>& original_contours, // Changed to map of shared_ptr<Contour>
-  std::vector<int>& current_contour_order_ids, // Stores map keys (contour IDs)
-  std::map<int, bool>& used_ids,            // Tracks which contour IDs have been used
-  double& min_travel_distance,
-  std::vector<int>& best_contour_order_ids,    // Stores map keys (contour IDs)
-  std::vector<bool>& best_directions)
+  const std::map<int, std::shared_ptr<Contour>>& contours,
+  std::vector<int>& contourOrder,
+  std::map<int, bool>& idUsed,
+  double& minDistance,
+  std::vector<int>& orderBest,
+  std::vector<bool>& directionBest)
 {
-  // Base case: A complete permutation of contour IDs has been formed
-  if (current_contour_order_ids.size() == original_contours.size()) {
-      // Now generate all direction combinations for this permutation of IDs
-      std::vector<bool> current_directions(original_contours.size());
-      generateDirectionCombinations(
-          original_contours,
-          current_contour_order_ids,
-          current_directions,
-          0, // Start generating directions from the first contour in the order
-          min_travel_distance,
-          best_contour_order_ids,
-          best_directions);
-      return;
+  // ID list has been filled
+  if (contourOrder.size() == contours.size()) {
+    std::vector<bool> directions(contours.size());
+    generateDirectionCombinations(
+      contours,
+      contourOrder,
+      directions,
+      0, // start ID
+      minDistance,
+      orderBest,
+      directionBest);
+    return;
   }
 
-  // Recursive step: Try adding each unused contour ID to the current order
-  // Iterate through the map keys (contour IDs)
-  for (auto const& [contour_id, contour_ptr] : original_contours) {
-      if (!used_ids[contour_id]) {
-          used_ids[contour_id] = true;
-          current_contour_order_ids.push_back(contour_id); // Add contour ID to the current order
+  RCLCPP_INFO(parentNode_->get_logger(), "Permutation step [%zu/%zu]", contourOrder.size(), contours.size());
+  
+  // ID list is not yet filled
+  for (auto const& [contour_id, contour_ptr] : contours) {
+    if (!idUsed[contour_id]) {
+      idUsed[contour_id] = true;
+      contourOrder.push_back(contour_id); // Add contour ID to the current order
 
-          generatePermutations(
-              original_contours,
-              current_contour_order_ids,
-              used_ids,
-              min_travel_distance,
-              best_contour_order_ids,
-              best_directions);
+      generatePermutations(
+        contours,
+        contourOrder,
+        idUsed,
+        minDistance,
+        orderBest,
+        directionBest);
 
-          // Backtrack: Remove the contour ID and mark it as unused for the next iteration
-          current_contour_order_ids.pop_back();
-          used_ids[contour_id] = false;
+      // reset for next iteration
+      contourOrder.pop_back();
+      idUsed[contour_id] = false;
+    }
+  }
+}
+
+
+std::shared_ptr<geometry_msgs::msg::Point> SalesmanSolver::getContourStart(const std::shared_ptr<Contour>& contour,
+                                                          bool startsFromFirstPoint) {
+  if (startsFromFirstPoint) {
+    return contour->getHead();
+  } else {
+    return contour->getTail();
+  }
+}
+
+std::shared_ptr<geometry_msgs::msg::Point> SalesmanSolver::getContourEnd(const std::shared_ptr<Contour>& contour, 
+                                                        bool startsFromFirstPoint) {
+  if (startsFromFirstPoint) {
+    return contour->getTail();
+  } else {
+    return contour->getHead();
+  }
+}
+
+double SalesmanSolver::calculateTourDistance(const std::vector<int>& tourIndices,
+                             const std::vector<std::vector<double>>& distanceMatrix) {
+  double totalDistance = 0.0;
+
+  if (tourIndices.empty()) {
+
+    return 0.0;
+  }
+
+  for (size_t i = 0; i < tourIndices.size(); ++i) {
+    int currentNodeIdx = tourIndices[i];
+    int nextNodeIdx = tourIndices[(i + 1) % tourIndices.size()]; // Loop back to start
+
+    totalDistance += distanceMatrix[currentNodeIdx][nextNodeIdx];
+  }
+
+  return totalDistance;
+}
+
+// Implements the 2-Opt local search algorithm for TSP with orientations
+void SalesmanSolver::solveTsp2OptWithOrientations(void) {
+  if (contourList_.empty()) {
+    RCLCPP_INFO(parentNode_->get_logger(), "Empty contour list.");
+    return;
+  }
+
+  travelOrder_.clear();
+
+  std::vector<TspNode> tspNodes;
+  tspNodes.reserve(contourList_.size() * 2);
+
+  for (const auto& pair : contourList_) {
+    int contourID = pair.first;
+    tspNodes.push_back({contourID, true}); // Forward node
+    tspNodes.push_back({contourID, false}); // Backward node
+  }
+
+  int numOriginalContours = contourList_.size();
+  int numTspNodes = tspNodes.size();
+
+  // Precompute distance matrix
+  std::vector<std::vector<double>> distanceMatrix(numTspNodes, std::vector<double>(numTspNodes));
+
+  for (int i = 0; i < numTspNodes; ++i) {
+    for (int j = 0; j < numTspNodes; ++j) {
+      const TspNode& node1 = tspNodes[i];
+      const TspNode& node2 = tspNodes[j];
+
+      if (i == j) {
+        distanceMatrix[i][j] = 0.0;
+        continue;
       }
+
+      if (node1.contourID == node2.contourID) {
+        distanceMatrix[i][j] = std::numeric_limits<double>::max(); // Block direct transitions within same contour
+        continue;
+      }
+
+      geometry_msgs::msg::Point endPointC1 = *getContourEnd(contourList_.at(node1.contourID), 
+                                                          node1.direction);
+      geometry_msgs::msg::Point startPointC2 = *getContourStart(contourList_.at(node2.contourID), 
+                                                              node2.direction);
+
+      distanceMatrix[i][j] = computeDistance(endPointC1, startPointC2);
+    }
+  }
+
+  // Generate random initial tour
+  std::vector<int> currentTourIndices;
+  std::vector<bool> visitedOriginalContour(numOriginalContours, false); // Tracks if original contour has been selected
+  std::random_device rd;
+  std::mt19937 g(rd());
+  std::uniform_int_distribution<> originalContourDist(0, numOriginalContours - 1);
+  std::uniform_int_distribution<> orientationDist(0, 1);
+
+  int firstOriginalContourId = originalContourDist(g);
+  bool firstContourOrientation = (orientationDist(g) == 0);
+  int firstTspNodeIndex = firstOriginalContourId * 2 + (firstContourOrientation ? 0 : 1);
+
+  currentTourIndices.reserve(numOriginalContours);
+  currentTourIndices.push_back(firstTspNodeIndex);
+  visitedOriginalContour[firstOriginalContourId] = true;
+
+  // Greedily add remaining contours
+  while (currentTourIndices.size() < numOriginalContours) {
+    int lastNodeInTourIndex = currentTourIndices.back();
+    double minDistance = std::numeric_limits<double>::max();
+    int bestNextNodeIndex = -1;
+
+    for (int i = 0; i < numTspNodes; ++i) {
+      const TspNode& candidateNode = tspNodes[i];
+      if (!visitedOriginalContour[candidateNode.contourID]) {
+        double dist = distanceMatrix[lastNodeInTourIndex][i];
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestNextNodeIndex = i;
+        }
+      }
+    }
+
+    if (bestNextNodeIndex != -1) {
+      currentTourIndices.push_back(bestNextNodeIndex);
+      visitedOriginalContour[tspNodes[bestNextNodeIndex].contourID] = true;
+    } else {
+      break;
+    }
+  }
+
+  double currentTourDistance = calculateTourDistance(currentTourIndices, distanceMatrix);
+  bool improvement = true;
+
+  // Perform 2-Opt local search
+  std::vector<int> bestTourIndices = currentTourIndices;
+  double bestTourDistance = currentTourDistance;
+
+  int maxIterationsWithoutImprovement = 1000; // Prevent infinite loops
+  int iterations = 0;
+
+  while (improvement && iterations < maxIterationsWithoutImprovement) {
+    improvement = false;
+    for (int i = 0; i < numOriginalContours - 1; ++i) {
+      for (int k = i + 1; k < numOriginalContours; ++k) {
+        std::vector<int> newTourIndices = currentTourIndices;
+        std::reverse(newTourIndices.begin() + i, newTourIndices.begin() + k + 1);
+
+        double newTourDistance = calculateTourDistance(newTourIndices, distanceMatrix);
+
+        if (newTourDistance < currentTourDistance) {
+            currentTourIndices = newTourIndices;
+            currentTourDistance = newTourDistance;
+            improvement = true;
+            iterations = 0;
+        }
+      }
+    }
+    iterations++;
+  }
+
+  // Set travel order
+  for (unsigned int i = 0; i < bestTourIndices.size(); i++) {
+    travelOrder_.push_back({bestTourIndices[i], tspNodes[bestTourIndices[i]].direction});
   }
 }

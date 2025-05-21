@@ -86,6 +86,9 @@ private:
 
     sensor_msgs::msg::Image sketchMsg_; // Received sketch
     bool eyesShutdownComplete_;         // Flag to check if eyes module is shutdown during closing
+    bool imageCaptured_;                // Flag to check if image is captured
+    bool cameraConnected_;              // Flag to check if camera is connected
+    bool armConnected_;                 // Flag to check if arm is connected
     std::string serviceLogName_;        // Holds name of service for logging.
 
     void serviceSketchRequest(void);
