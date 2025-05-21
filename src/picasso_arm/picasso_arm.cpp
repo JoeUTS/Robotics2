@@ -12,13 +12,172 @@
 
 using moveit::planning_interface::MoveGroupInterface;
 
-PicassoArm::PicassoArm(void) : Node("picasso_arm") {
-    RCLCPP_INFO(this->get_logger(), "PicassoArm node initialized.");
+MoveControl::MoveControl(const std::shared_ptr<rclcpp::Node> &owningNode, 
+                        const std::string &moveGroupName, 
+                        const  std::string &endEffectorLink) : 
+                                owningNode_(owningNode), moveGroupName_(moveGroupName), 
+                                groupInterface_(owningNode, moveGroupName), 
+                                endEffectorLink_(endEffectorLink) {
 
-    // timer_ = this->create_wall_timer(
-    //     std::chrono::seconds(5), 
-    //     std::bind(&PicassoArm::planCartesianPath, this) 
-    // );
+    kinematicModel_->getJointModelGroup(moveGroupName_);
+    groupInterface_.setEndEffectorLink(endEffectorLink_);
+    groupInterface_.startStateMonitor();
+    groupInterface_.setNumPlanningAttempts(5);
+    groupInterface_.setPlanningTime(5.0);                          // [s] 5 sec
+    groupInterface_.setGoalPositionTolerance(5e-5);                // [m] 5mm
+    groupInterface_.setGoalOrientationTolerance(5 * M_PI / 180);   // [rad] 5 deg
+    groupInterface_.setGoalJointTolerance(5 * M_PI / 180);         // [rad] 5 deg
+
+    kinematicModel_ = groupInterface_.getRobotModel();
+
+    RCLCPP_INFO(owningNode_->get_logger(), "Move Controller initialized.");
+}
+
+bool MoveControl::poseToRobotState(const geometry_msgs::msg::Pose &pose, 
+                                    moveit::core::RobotState &robotState) {
+    robotState.setToDefaultValues();
+    Eigen::Isometry3d poseEigen;
+    tf2::fromMsg(pose,poseEigen);
+    bool success = robotState.setFromIK(robotState.getJointModelGroup(moveGroupName_), 
+                                        pose, 
+                                        1.0);
+
+    if (success) {
+        RCLCPP_INFO(owningNode_->get_logger(), "Converted pose successfully!");
+        return true;
+
+    } else {
+        RCLCPP_WARN(owningNode_->get_logger(), "Failed to convert pose!");
+        return false;
+    }
+}
+
+bool MoveControl::planTrajectoryPoint(geometry_msgs::msg::Pose &startPose, 
+                                    geometry_msgs::msg::Pose &goalPose, 
+                                    moveit::planning_interface::MoveGroupInterface::Plan& plan) {
+    // Abort if kinematic model is not initialized
+    if (kinematicModel_ == NULL) {
+        RCLCPP_WARN(owningNode_->get_logger(), "Aborting planning, kinematic model is not initialized!");    
+        return false;
+    }
+
+    // Abort if interface is not initialized
+    if (startPose == goalPose) {
+        RCLCPP_WARN(owningNode_->get_logger(), "Aborting planning, start and goal poses are the same!");    
+        return false;
+    }
+    
+    groupInterface_.setPoseTarget(goalPose);
+    moveit::core::RobotState startState(kinematicModel_);
+    poseToRobotState(startPose, startState);
+    groupInterface_.setStartState(startState);
+ 
+    // Create a plan
+    auto const [success, calulatedPlan] = [this]{
+        moveit::planning_interface::MoveGroupInterface::Plan msg;
+        auto const ok = static_cast<bool>(groupInterface_.plan(msg));
+        return std::make_pair(ok, msg);
+    }();
+
+    if (success == moveit::core::MoveItErrorCode::SUCCESS) {
+        plan = calulatedPlan;
+        groupInterface_.setStartStateToCurrentState();
+        RCLCPP_INFO(owningNode_->get_logger(), "Planning successful!");
+
+        return true;
+     
+    } else {
+        RCLCPP_ERROR(owningNode_->get_logger(), "Planning failed!");
+
+        return false;
+    }
+}
+
+bool MoveControl::planTrajectoryPath(geometry_msgs::msg::Pose &startPose,
+                                    geometry_msgs::msg::PoseArray &waypoints, 
+                                    moveit::planning_interface::MoveGroupInterface::Plan& plan) {
+    // Abort if kinematic model is not initialized
+    if (!kinematicModel_ == NULL) {
+        RCLCPP_WARN(owningNode_->get_logger(), "Aborting planning, UR robot is not connected!");    
+        return false;
+    }
+
+    // Abort if waypoints are empty
+    if (waypoints.poses.size() <= 0) {
+        RCLCPP_WARN(owningNode_->get_logger(), "Aborting planning, waypoints are empty!");    
+        return false;
+    }
+
+    const double trajStep = 0.01;    // [m] trajectory goal step size
+    const double maxVariance = 0.01; // [m] 1cm. Maximum allowed variance from the path
+    const double completnessMin = 50.0; // [%] 50% of the path must be completed for success
+
+    // Add start pose to waypoints
+    std::vector<geometry_msgs::msg::Pose> tempVec;
+    tempVec.reserve(waypoints.poses.size() + 1);
+    tempVec.push_back(startPose);
+    tempVec.insert(tempVec.end(), waypoints.poses.begin(), waypoints.poses.end());
+    waypoints.poses = tempVec;
+
+    // Get starting state.
+    moveit::core::RobotState startState(kinematicModel_);
+    poseToRobotState(startPose, startState);
+    groupInterface_.setStartState(startState);
+
+    const double completness = groupInterface_.computeCartesianPath(waypoints.poses, 
+                                                                    trajStep, 
+                                                                    maxVariance, 
+                                                                    plan.trajectory_);
+
+    if (completness >= completnessMin && plan.trajectory_.joint_trajectory.joint_names.size() > 0) {
+        RCLCPP_INFO(owningNode_->get_logger(), "Planning successful!");
+        return true;
+
+    } else {
+        std::string errorMsg;
+
+        if (completness < completnessMin) {
+            errorMsg = "completeness < %f%", completnessMin;
+
+        } else {
+            errorMsg = "empty plan.";
+        }
+
+        RCLCPP_ERROR(owningNode_->get_logger(), "Planning failed, %s!", errorMsg);
+        return false;
+    }
+}
+
+
+bool MoveControl::executePlan(moveit::planning_interface::MoveGroupInterface::Plan &plan) {
+    // Abort if plan is empty
+    if (plan.trajectory_.joint_trajectory.joint_names.size() <= 0) {
+        RCLCPP_WARN(owningNode_->get_logger(), "Aborting movement, empty plan!");    
+        return false;
+    }
+
+    // Execute plan
+    groupInterface_.execute(plan);
+    RCLCPP_WARN(owningNode_->get_logger(), "Executing planned trajectory!");               
+
+    return true;
+}
+
+
+
+
+
+
+PicassoArm::PicassoArm(void) : Node("picasso_arm"), 
+                                moveGroupName_("ur_manipulator"), 
+                                endEffectorLink_("tool0") {
+    // Setting flags
+    prevContourExists_ = false;
+
+    // Services
+    servConnectUR_ = this->create_service<std_srvs::srv::Trigger>("/connect_ur",
+                                          std::bind(&PicassoArm::serviceConnectUR, 
+                                          this, std::placeholders::_1, std::placeholders::_2));
 
     servStartDrawing_ = this->create_service<std_srvs::srv::Trigger>("/start_drawing", 
                                           std::bind(&PicassoArm::serviceStartDrawing, 
@@ -38,205 +197,55 @@ PicassoArm::PicassoArm(void) : Node("picasso_arm") {
 
     servNextContour_ = this->create_client<picasso_bot::srv::GetPoseArray>("/next_contour");
 
-};
+    servTotalLines_ = this->create_client<picasso_bot::srv::GetTotalLines>("/total_lines");
 
-
-void PicassoArm::toolpath_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg) {
-    RCLCPP_INFO(this->get_logger(), "Received toolpath with %zu poses.", msg->poses.size());
-
-    target_points_.clear();
-    current_target_index_ = 0;
-
-    for (const auto& pose : msg->poses) {
-        target_points_.push_back(pose.position);
-    }
-
-    if (!target_points_.empty()) {
-        RCLCPP_INFO(this->get_logger(), "Toolpath loaded. Starting movement...");
-        timer_->reset();  // Restart timer to begin moving
-    } else {
-        RCLCPP_WARN(this->get_logger(), "Received empty toolpath.");
-    }
+    RCLCPP_INFO(this->get_logger(), "PicassoArm node initialized.");
 }
 
-std::vector<geometry_msgs::msg::Pose> PicassoArm::fetchWaypoints() {
-    std::vector<geometry_msgs::msg::Pose> waypoints;
-
-    // Get current pose as the starting waypoint
-    auto move_group = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
-    geometry_msgs::msg::Pose current_pose = move_group.getCurrentPose().pose;
-    waypoints.push_back(current_pose);
-    RCLCPP_INFO(this->get_logger(), "Current pose added as starting waypoint.");
-
-    // Get the latest contour
-    auto pathMsg = getNextContour();
-    if (pathMsg.poses.empty()) {
-        RCLCPP_WARN(this->get_logger(), "No contour received. Returning current pose only.");
-        return waypoints;
-    }
-
-    // Append all poses from contour
-    waypoints.insert(waypoints.end(), pathMsg.poses.begin(), pathMsg.poses.end());
-    RCLCPP_INFO(this->get_logger(), "%zu waypoints fetched.", waypoints.size());
-
-    return waypoints;
-}
-
-bool PicassoArm::planCartesianPath(const std::vector<geometry_msgs::msg::Pose> &waypoints, moveit_msgs::msg::RobotTrajectory &trajectory) {
-    auto move_group = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
-    move_group.setEndEffectorLink("wrist_link_3");
-
-    double fraction = move_group.computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
-    if (fraction > 0.95) {
-        RCLCPP_INFO(this->get_logger(), "Cartesian path planned successfully (%.2f%%).", fraction * 100.0);
-        return true;
-    } else {
-        RCLCPP_WARN(this->get_logger(), "Cartesian path planning incomplete (%.2f%%).", fraction * 100.0);
-        return false;
-    }
-}
-
-bool PicassoArm::executeTrajectory(const moveit_msgs::msg::RobotTrajectory &trajectory) {
-    auto move_group = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
-    move_group.setEndEffectorLink("wrist_link_3");
-
-    moveit::planning_interface::MoveGroupInterface::Plan plan;
-    plan.trajectory_ = trajectory;
-    RCLCPP_INFO(this->get_logger(), "Executing trajectory...");
-
-    move_group.execute(plan);
-    return true;
-}
-
-
-void PicassoArm::serviceStartDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
-    (void)request;  // Unused parameter
-
-    auto waypoints = fetchWaypoints();
-    moveit_msgs::msg::RobotTrajectory trajectory;
-    
-    if (planCartesianPath(waypoints, trajectory)) {
-        if (executeTrajectory(trajectory)) {
-            response->success = true;
-            response->message = "Drawing started and path executed.";
-        } else {
-            response->success = false;
-            response->message = "Trajectory execution failed.";
-        }
-    } else {
-        response->success = false;
-        response->message = "Cartesian path planning failed.";
-    }
-}
-
-void PicassoArm::serviceStopDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
-    (void)request;  // Unused parameter
-    response->success = true;
-    RCLCPP_INFO(this->get_logger(), "Drawing stop request received.");
-
-    if (timer_ && timer_->is_ready()) {
-        timer_->cancel();   // ← stops any active timer
-    }
-
-    response->success = true;
-    response->message = "Stopped drawing.";
-    // TO DO: Stop drawing loop
-}
-
-void PicassoArm::serviceMoveToHome(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
-    (void)request;  // Unused parameter
-    response->success = true;
-    RCLCPP_INFO(this->get_logger(), "moving to home");
-
-    auto move_group = moveit::planning_interface::MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
-    move_group.setNamedTarget("up");
-
-    bool success = (move_group.move() == moveit::core::MoveItErrorCode::SUCCESS);
-    response->success = success;
-
-    if (success) {
-        RCLCPP_INFO(this->get_logger(), "Robot moved to home position successfully.");
-    } else {
-        RCLCPP_ERROR(this->get_logger(), "Failed to move robot to home position.");
-    }
-}
-
-void PicassoArm::serviceEStop(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
-    (void)request;  // Unused parameter
-    response->success = true;
-    RCLCPP_WARN(this->get_logger(), "E-STOP request received.");
-
-    auto move_group = MoveGroupInterface(shared_from_this(), "ur_manipulator");
-    move_group.stop();    // ← emergency stop
-
-    response->success = true;
-    response->message = "Emergency Stop activated.";
-}
-
-void PicassoArm::serviceNextContourRequest(void) {
-    toolPathMsg_ = geometry_msgs::msg::PoseArray();
-    toolPathIndex_ = 0;
-
-    serviceWait<picasso_bot::srv::GetPoseArray>(servNextContour_);
-
-    auto request = std::make_shared<picasso_bot::srv::GetPoseArray::Request>();
-    auto weak_this = std::weak_ptr<PicassoArm>(
-        std::static_pointer_cast<PicassoArm>(this->shared_from_this()));
-
-    servNextContour_->async_send_request(request,
-        [weak_this, this](rclcpp::Client<picasso_bot::srv::GetPoseArray>::SharedFuture future) {
-            
-        auto shared_this = weak_this.lock();
-        if (shared_this) {
-            shared_this->serviceNextContourRespose(future);
-
-        } else {
-            std::string serviceName = std::string(servNextContour_->get_service_name());
-            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", serviceName.c_str());
-        }
-    });
-
-    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", std::string(servNextContour_->get_service_name()).c_str());
-}
-
-
-void PicassoArm::serviceNextContourRespose(rclcpp::Client<picasso_bot::srv::GetPoseArray>::SharedFuture future) {
-    auto result = future.get();
-    std::string serviceName = std::string(servNextContour_->get_service_name());
-
-    if (result->success) {
-        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", serviceName.c_str());
-
-    } else {
-        RCLCPP_WARN(this->get_logger(), "Service '%s' failed.", serviceName.c_str());
-    }
-}
-
-geometry_msgs::msg::PoseArray PicassoArm::getNextContour(void) {
-    serviceNextContourRequest();
+void PicassoArm::drawImage(void) {
     std::chrono::milliseconds sleepTime = std::chrono::milliseconds(100);
     unsigned int maxAttempts = 10;
     unsigned int attempts = 0;
+    prevContourExists_ = false;
 
-    while (toolPathMsg_.poses.size() == 0 && attempts < maxAttempts) {
+    serviceTotalLinesRequest();
+
+    while (!totalLinesResponce_ && attempts < maxAttempts) {
         std::this_thread::sleep_for(sleepTime);
         attempts++;
     }
 
-    if (toolPathMsg_.poses.size() == 0) {
-        if (prevContourExists_ == false) {
-            RCLCPP_WARN(this->get_logger(), "No contour received after %ld ms.",maxAttempts * sleepTime.count());
-        } else {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Drawing complete.");
-        }
-        
-        return toolPathMsg_;
+    if (totalLines_ <= 0) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to draw image: no contours available.");
+        return;
     }
 
-    prevContourExists_ = true;
-    RCLCPP_INFO(this->get_logger(), "Contour received.");
+    unsigned long currentLine = 0;
+    
+    while (currentLine < totalLines_) {
+        bool success = getNextContour();
 
-    return toolPathMsg_;
+        if (!success) {
+            // TO DO: move to home.
+        }
+
+        RCLCPP_ERROR(this->get_logger(), "Drawing line %zu of %zu", currentLine, totalLines_);
+        moveit::planning_interface::MoveGroupInterface::Plan plan;
+        geometry_msgs::msg::Pose startPose = moveController_->groupInterface_.getCurrentPose().pose;
+        success = moveController_->planTrajectoryPath(startPose, toolPathMsg_, plan);
+
+        if (!success) {
+            // TO DO: move to home.
+        }
+
+        success = moveController_->executePlan(plan);
+
+        if (!success) {
+            // TO DO: move to home.
+        }
+
+        currentLine++;
+    }
 }
 
 // void PicassoArm::moveToNextPose() {
@@ -271,41 +280,25 @@ geometry_msgs::msg::PoseArray PicassoArm::getNextContour(void) {
 // }
 
 
-// void PicassoArm::moveToPose() {
 
-//     auto node_shared = shared_from_this();
-//     auto move_group_interface = MoveGroupInterface(node_shared, "ur_manipulator");
+void PicassoArm::getCurrentPose() {
+    
+}
+// void PicassoArm::toolpath_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg) {
+//     RCLCPP_INFO(this->get_logger(), "Received toolpath with %zu poses.", msg->poses.size());
 
-//     move_group_interface.setEndEffectorLink("tool0");
+//     target_points_.clear();
+//     current_target_index_ = 0;
 
-//     // Set a target Pose
-//    auto const target_pose = []{
-//     geometry_msgs::msg::Pose msg;
-//     msg.position.x = 0.5;
-//     msg.position.y = 0.5;
-//     msg.position.z = 0.5;
-//     return msg;
-//    }();
-   
-//     move_group_interface.setPoseTarget(target_pose);
- 
-//     // Create a plan to that target pose
-//     auto const [success, plan] = [&move_group_interface]{
-//         moveit::planning_interface::MoveGroupInterface::Plan msg;
-//         auto const ok = static_cast<bool>(move_group_interface.plan(msg));
-//         return std::make_pair(ok, msg);
-//     }();
+//     for (const auto& pose : msg->poses) {
+//         target_points_.push_back(pose.position);
+//     }
 
-
-//     // Execute the plan
-//     if(success) {
-//      move_group_interface.execute(plan);
-//      RCLCPP_WARN(this->get_logger(), "Completed function");               
-//      timer_->cancel();
-
-     
+//     if (!target_points_.empty()) {
+//         RCLCPP_INFO(this->get_logger(), "Toolpath loaded. Starting movement...");
+//         timer_->reset();  // Restart timer to begin moving
 //     } else {
-//      RCLCPP_ERROR(this->get_logger(), "Planning failed!");
+//         RCLCPP_WARN(this->get_logger(), "Received empty toolpath.");
 //     }
 // }
 
@@ -331,43 +324,150 @@ while (contourMsg.poses.size() > index) {
 }
 
 */
+void PicassoArm::serviceConnectUR(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    response->success = true;
+    // TO DO: are there any other things we need to connect to?
+    moveController_ = std::make_shared<MoveControl>(shared_from_this(), 
+                                                    moveGroupName_,
+                                                    endEffectorLink_);
+    
+    RCLCPP_INFO(this->get_logger(), "Connected to UR.");
+}
 
-// get path function (void) - reutun vec<pose>
-// calculate traj function (vec<pose>) - return traj
-// move arm function (traj) - return bool
-// void PicassoArm::cartesianPath(){
+void PicassoArm::serviceStartDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "Drawing started.");
+    // TO DO: LAUNCH AS OWN THREAD
+    drawImage();
+}
+
+void PicassoArm::serviceStopDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "Drawing stopped.");
+    // TO DO: Stop drawing loop
+}
+
+void PicassoArm::serviceMoveToHome(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    response->success = true;
+    RCLCPP_INFO(this->get_logger(), "moving to home");
+    // TO DO: Move to home pose
+}
+
+void PicassoArm::serviceEStop(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    response->success = true;
+    moveController_->groupInterface_.stop(); // Stop the robot
+    RCLCPP_WARN(this->get_logger(), "E-stop activated.");
+}
+
+
+
+void PicassoArm::serviceTotalLinesRequest(void) {
+    totalLines_ = 0;
+    totalLinesResponce_ = false;
+    serviceLogName_ = std::string(servTotalLines_->get_service_name());
+
+    serviceWait<picasso_bot::srv::GetTotalLines>(servTotalLines_);
+
+    auto request = std::make_shared<picasso_bot::srv::GetTotalLines::Request>();
+    auto weak_this = std::weak_ptr<PicassoArm>(
+        std::static_pointer_cast<PicassoArm>(this->shared_from_this()));
+
+    servTotalLines_->async_send_request(request,
+        [weak_this, this](rclcpp::Client<picasso_bot::srv::GetTotalLines>::SharedFuture future) {
+            
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            shared_this->serviceTotalLinesRespose(future);
+
+        } else {
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", serviceLogName_.c_str());
+        }
+    });
 
     
+    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", serviceLogName_.c_str());
 
-//     using moveit::planning_interface::MoveGroupInterface;
-//     auto move_group_interface = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
+}
 
-//     auto const end_effector_pose = move_group_interface.getCurrentPose();
+void PicassoArm::serviceTotalLinesRespose(rclcpp::Client<picasso_bot::srv::GetTotalLines>::SharedFuture future) {
+    auto result = future.get();
+    serviceLogName_ = std::string(servNextContour_->get_service_name());
+    totalLinesResponce_ = true;
 
-//     RCLCPP_INFO(this->get_logger(), "Starting Cartesian path movement.");
+    if (result->success) {
+        totalLines_ = result->amount;
+        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", serviceLogName_.c_str());
 
-//     // Get the latest contour (calls your existing service + fills toolPathMsg_)
-//     auto pathMsg = getNextContour();
+    } else {
+        RCLCPP_WARN(this->get_logger(), "Service '%s' failed.", serviceLogName_.c_str());
+    }
+}
 
-//     if (pathMsg.poses.empty()) {
-//         RCLCPP_WARN(this->get_logger(), "No waypoints received. Aborting Cartesian move.");
-//         return;
-//     }
+void PicassoArm::serviceNextContourRequest(void) {
+    serviceLogName_ = std::string(servTotalLines_->get_service_name());
+    toolPathMsg_ = geometry_msgs::msg::PoseArray();
+    prevContourExists_ = false;
+    contourResponce_ = false;
 
-//     auto move_group = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
-//     move_group.setEndEffectorLink("wrist_link_3");
+    serviceWait<picasso_bot::srv::GetPoseArray>(servNextContour_);
 
-//     // Convert PoseArray to vector of waypoints
-//     ///std::vector<geometry_msgs::msg::Pose> waypoints(path.poses);
-    
+    auto request = std::make_shared<picasso_bot::srv::GetPoseArray::Request>();
+    auto weak_this = std::weak_ptr<PicassoArm>(
+        std::static_pointer_cast<PicassoArm>(this->shared_from_this()));
 
-//     moveit_msgs::msg::RobotTrajectory trajectory;
-//     double fraction = move_group.computeCartesianPath(pathMsg.poses, 0.01, 0.0, trajectory);  // 1cm step, no jump threshold
+    servNextContour_->async_send_request(request,
+        [weak_this, this](rclcpp::Client<picasso_bot::srv::GetPoseArray>::SharedFuture future) {
+            
+        auto shared_this = weak_this.lock();
+        if (shared_this) {
+            shared_this->serviceNextContourRespose(future);
 
-//     if (fraction > 0.95) {
-//         RCLCPP_INFO(this->get_logger(), "Cartesian path planned successfully (%.2f%%). Executing...", fraction * 100.0);
-//         move_group.execute(trajectory);
-//     } else {
-//         RCLCPP_WARN(this->get_logger(), "Cartesian path planning incomplete (%.2f%%). Not executing.", fraction * 100.0);
-//     }
-// }
+        } else {
+            RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "MainWindow object expired, cannot process service '%s'.", serviceLogName_);
+            return;
+        }
+    });
+
+    RCLCPP_INFO(this->get_logger(), "Service '%s' request sent.", serviceLogName_.c_str());
+}
+
+void PicassoArm::serviceNextContourRespose(rclcpp::Client<picasso_bot::srv::GetPoseArray>::SharedFuture future) {
+    auto result = future.get();
+    serviceLogName_ = std::string(servNextContour_->get_service_name());
+    contourResponce_ = true;
+
+    if (result->success) {
+        RCLCPP_INFO(this->get_logger(), "Service '%s' called successfully.", serviceLogName_.c_str());
+
+    } else {
+        RCLCPP_WARN(this->get_logger(), "Service '%s' failed.", serviceLogName_.c_str());
+    }
+}
+
+bool PicassoArm::getNextContour(void) {
+    serviceNextContourRequest();
+    std::chrono::milliseconds sleepTime = std::chrono::milliseconds(100);
+    unsigned int maxAttempts = 10;
+    unsigned int attempts = 0;
+
+    while (!contourResponce_ && attempts < maxAttempts) {
+        std::this_thread::sleep_for(sleepTime);
+        attempts++;
+    }
+
+    if (toolPathMsg_.poses.size() <= 0) {
+
+        if (!prevContourExists_) {
+            RCLCPP_WARN(this->get_logger(), "No contour received after %u ms.", maxAttempts * sleepTime.count());
+        } else {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Drawing complete.");
+        }
+        
+        return false;
+    }
+
+    prevContourExists_ = true;
+    RCLCPP_INFO(this->get_logger(), "Contour received.");
+
+    return true;
+}

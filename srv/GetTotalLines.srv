@@ -1,0 +1,5 @@
+# Request
+---
+# Response
+bool success
+uint16 amount
