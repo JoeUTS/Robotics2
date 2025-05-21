@@ -5,8 +5,9 @@
 #include <memory>
 #include <functional>
 #include <string>
-#include <iostream> // Should be using RCLCPP_INFO(this->get_logger(), "") or RCLCPP_INFO_STREAM(this->get_logger(), "") instead
+#include <iostream>
 #include <vector>
+#include <type_traits>
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
@@ -22,12 +23,13 @@
 
 class MoveControl {
 public:
-  moveit::planning_interface::MoveGroupInterface groupInterface_;
+  MoveControl(const std::shared_ptr<rclcpp::Node> owningNode, 
+              const std::string moveGroupName, 
+              const std::string endEffectorLink);
 
-  MoveControl(const std::shared_ptr<rclcpp::Node> &owningNode, 
-              const std::string &moveGroupName, 
-              const std::string &endEffectorLink);
+  std::unique_ptr<moveit::planning_interface::MoveGroupInterface> groupInterface_;
 
+  
   /// @brief Plan trajectory to the input goal pose.
   /// @param startPose The start pose to set for the end effector.
   /// @param goalPose The goal pose to set for the end effector.
@@ -67,38 +69,29 @@ private:
 class PicassoArm : public rclcpp::Node {
 public:
   PicassoArm(void);
-  
-  void moveToPose();  //  Declare moveToPose()
-  void getCurrentPose(); // Declare setCurrentState()
-  void getGoalPose(); // Declare moveRandomly()
-  void moveToNextPose(); // Declare moveToNextPose()
-  bool planCartesianPath(); // Declare cartesianPath()
-  void startExecutor(); // Declare startExecutor()
-  void toolpath_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg); // Declare toolpath_callback()
-
 
 private:
   const std::string moveGroupName_;
   const std::string endEffectorLink_;
   std::shared_ptr<MoveControl> moveController_; // Move controller for arm movements.
 
-  std::shared_ptr<rclcpp::executors::SingleThreadedExecutor> executor_;
-  std::thread spinner_;
-  rclcpp::TimerBase::SharedPtr timer_;  // Timer for periodic execution
+  bool getNextContour(void);  // Get next contour from picasso eyes
+  void drawImage(void);       // Draw image loop
 
-  //std::shared_ptr<PicassoEyes> eyes_;                // Pointer to the Eyes system
 
-  std::vector<geometry_msgs::msg::Point> target_points_; // List of target points to move through
-  geometry_msgs::msg::Pose current_pose;
-  size_t current_target_index_ = 0;
-
+  void getCurrentPose();  // Declare setCurrentState()
+  void getGoalPose();     // Declare moveRandomly()
+  void moveToNextPose();  // Declare moveToNextPose()
+  void cartesianPath();   // Declare cartesianPath()
+  void toolpath_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg); // Declare toolpath_callback()
 
   // Added by Joseph
   bool prevContourExists_;                      // Flag to check if first contour has been received
   bool contourResponce_;                        // Flag to indicate if the contour service has returned.
   bool totalLinesResponce_;                     // Flag to indicate if the total lines service has returned.
   geometry_msgs::msg::PoseArray toolPathMsg_;   // Received toolpath
-  unsigned long totalLines_;                    // Total number of lines to draw
+  unsigned int totalLines_;                     // Total number of lines to draw
+  unsigned int currentLine_;                    // Current line being drawn
   std::string serviceLogName_;                  // Holds name of service for logging.
 
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servConnectUR_;          // Connects to the UR robot
@@ -108,12 +101,6 @@ private:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servEStop;               // E-stop
   
   rclcpp::Client<picasso_bot::srv::GetPoseArray>::SharedPtr servNextContour_; // Gets the next contour to draw
-
-  std::vector<geometry_msgs::msg::Pose> fetchWaypoints();
-  bool planCartesianPath(const std::vector<geometry_msgs::msg::Pose> &waypoints,
-                       moveit_msgs::msg::RobotTrajectory &trajectory);
-
-  bool executeTrajectory(const moveit_msgs::msg::RobotTrajectory& trajectory);
   rclcpp::Client<picasso_bot::srv::GetTotalLines>::SharedPtr servTotalLines_; // gets the total number of contours in image.
 
   void serviceConnectUR(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);

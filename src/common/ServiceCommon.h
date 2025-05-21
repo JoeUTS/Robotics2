@@ -22,19 +22,6 @@ void serviceWait(typename rclcpp::Client<ServiceT>::SharedPtr client) {
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service to connect");
         }
     }
-  auto messagePeriod = std::chrono::milliseconds(1000);
-  std::chrono::time_point<std::chrono::system_clock> lastMsg;
-  
-  while (!client->wait_for_service(std::chrono::milliseconds(200))) {
-    std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
-    std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-    
-    if (timeSinceLastMsg >= messagePeriod) {
-      lastMsg = std::chrono::system_clock::now();
-      std::string serviceName = std::string(client->get_service_name());
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service '%s' to connect", serviceName.c_str());
-    }
-  }
 }
 
 template <typename ServiceT>
