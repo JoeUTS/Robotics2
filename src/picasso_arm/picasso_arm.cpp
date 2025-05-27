@@ -171,8 +171,6 @@ bool MoveControl::executePlan(moveit::planning_interface::MoveGroupInterface::Pl
 
 
 
-
-
 PicassoArm::PicassoArm(void) : Node("picasso_arm"), 
                                 moveGroupName_("ur_manipulator"), 
                                 endEffectorLink_("tool0") {
