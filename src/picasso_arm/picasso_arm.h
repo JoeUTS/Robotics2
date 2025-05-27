@@ -85,6 +85,14 @@ private:
   void cartesianPath();   // Declare cartesianPath()
   void toolpath_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg); // Declare toolpath_callback()
 
+  void pauseDrawing();                          // Pause the drawing process
+  void resumeDrawing();                         // Resume the drawing process
+  // Added by George ^v
+  bool drawing_active_;                         // Flag to indicate if the drawing process is active
+  bool drawing_paused_;                         // Flag to indicate if the drawing process is paused
+  unsigned int currentLine_;                    // Current line being drawn
+  unsigned int totalLines_;                     // Total number of lines to draw
+ 
   // Added by Joseph
   bool prevContourExists_;                      // Flag to check if first contour has been received
   bool contourResponce_;                        // Flag to indicate if the contour service has returned.

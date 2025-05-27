@@ -204,15 +204,62 @@ PicassoArm::PicassoArm(void) : Node("picasso_arm"),
 
     servTotalLines_ = this->create_client<picasso_bot::srv::GetTotalLines>("/total_lines");
 
-    RCLCPP_INFO(this->get_logger(), "PicassoArm node initialized.");
+    RCLCPP_INFO(this->get_logger(), "PicassoArm node initialised.");
 }
+
+void PicassoArm::resumeDrawing() {
+    if (!drawing_active_) {
+        drawing_active_ = true;
+        drawing_paused_ = false;
+        std::thread(&PicassoArm::drawImage, this).detach();
+    } else {
+        drawing_paused_ = false;
+    }
+}
+
+void PicassoArm::pauseDrawing() {
+    drawing_paused_ = true;
+    
+    RCLCPP_INFO(this->get_logger(), "Drawing paused.");
+}
+
 
 void PicassoArm::drawImage(void) {
     std::chrono::milliseconds sleepTime = std::chrono::milliseconds(100);
     unsigned int maxAttempts = 50;  // 5 secconds
     unsigned int attempts = 0;
     bool drawingComplete = false;
-    
+
+    //Georgios - Made this loop for robot to pause drawing and continue from where it stopped.
+    // not sure if this is the best way to do it.
+
+    // while (drawing_active_ && currentLine_ < totalLines_) {
+    // if (drawing_paused_) {
+    //     RCLCPP_INFO(this->get_logger(), "Drawing paused. Waiting to resume...");
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    //     continue;
+    // }
+
+    // geometry_msgs::msg::PoseArray currentLine = toolPathContours_[currentLine_];
+    // moveit::planning_interface::MoveGroupInterface::Plan plan;
+    // geometry_msgs::msg::Pose startPose = moveController_->groupInterface_->getCurrentPose().pose;
+    // bool success = moveController_->planTrajectoryPath(startPose, currentLine, plan);
+    //     if (!success) {
+    //         RCLCPP_ERROR(this->get_logger(), "Planning failed on line %u. Aborting.", currentLine_);
+    //         break;
+    //     }
+
+    //     success = moveController_->executePlan(plan);
+    //     if (!success) {
+    //         RCLCPP_ERROR(this->get_logger(), "Execution failed on line %u. Aborting.", currentLine_);
+    //         break;
+    //     }
+    //     currentLine_++; // Increment the current line after successful execution
+    // }
+    // drawing_active_ = false; // Stop drawing after the last line is drawn
+    // RCLCPP_INFO(this->get_logger(), "Drawing completed. Moving to HOME!");
+    // moveToHome();
+
     while (!drawingComplete) {
         bool drawingComplete = getNextContour();
 
@@ -250,10 +297,10 @@ void PicassoArm::moveToHome() {
     bool success = static_cast<bool>(move_group.plan(plan));
 
     if (success) {
-        RCLCPP_INFO(this->get_logger(), "Planned to 'up' position. Executing...");
+        RCLCPP_INFO(this->get_logger(), "Planned to 'home' position. Executing...");
         success = moveController_->executePlan(plan);
     } else {
-        RCLCPP_WARN(this->get_logger(), "Failed to plan to 'up' position.");
+        RCLCPP_WARN(this->get_logger(), "Failed to plan to 'home' position.");
     }
 }
 
@@ -271,12 +318,24 @@ void PicassoArm::serviceConnectUR(const std_srvs::srv::Trigger::Request::SharedP
 void PicassoArm::serviceStartDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
     response->success = true;
     RCLCPP_INFO(this->get_logger(), "Drawing started.");
+
     // TO DO: LAUNCH AS OWN THREAD
+    // if (drawing_active_){
+    //     drawing_active_ = true;
+    //     drawing_paused_ = false;
+    //     std::thread(&PicassoArm::drawImage, this).detach();
+    // } else {
+    //     drawing_paused_ = false;
+    // }
+
     drawImage();
 }
 
 void PicassoArm::serviceStopDrawing(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
+    
     response->success = true;
+    pauseDrawing(); // Pause the drawing process
+    
     RCLCPP_INFO(this->get_logger(), "Drawing stopped.");
     // TO DO: Stop drawing loop
 }
