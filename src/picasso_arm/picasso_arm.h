@@ -81,7 +81,7 @@ private:
 
   void getCurrentPose();  // Declare setCurrentState()
   void getGoalPose();     // Declare moveRandomly()
-  void moveToNextPose();  // Declare moveToNextPose()
+  void moveToHome();  // Declare moveToNextPose()
   void cartesianPath();   // Declare cartesianPath()
   void toolpath_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg); // Declare toolpath_callback()
 

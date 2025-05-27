@@ -235,7 +235,28 @@ void PicassoArm::drawImage(void) {
     }
 
     // TODO: Move to home pose
+    RCLCPP_INFO(this->get_logger(), "Drawing completed. Moving to HOME!");
+    moveToHome();
 }
+
+void PicassoArm::moveToHome() {
+    using moveit::planning_interface::MoveGroupInterface;
+    auto move_group = MoveGroupInterface(this->shared_from_this(), "ur_manipulator");
+
+    // Set the named target as "up"
+    move_group.setNamedTarget("up");
+
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    bool success = static_cast<bool>(move_group.plan(plan));
+
+    if (success) {
+        RCLCPP_INFO(this->get_logger(), "Planned to 'up' position. Executing...");
+        success = moveController_->executePlan(plan);
+    } else {
+        RCLCPP_WARN(this->get_logger(), "Failed to plan to 'up' position.");
+    }
+}
+
 
 void PicassoArm::serviceConnectUR(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
     response->success = true;
@@ -264,6 +285,8 @@ void PicassoArm::serviceMoveToHome(const std_srvs::srv::Trigger::Request::Shared
     response->success = true;
     RCLCPP_INFO(this->get_logger(), "moving to home");
     // TO DO: Move to home pose
+    moveToHome();
+    RCLCPP_INFO(this->get_logger(), "Moved to home.");
 }
 
 void PicassoArm::serviceEStop(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response) {
