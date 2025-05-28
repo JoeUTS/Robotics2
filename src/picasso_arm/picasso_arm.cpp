@@ -217,8 +217,6 @@ void PicassoArm::resumeDrawing() {
 
 void PicassoArm::pauseDrawing() {
     drawing_paused_ = true;
-    
-    RCLCPP_INFO(this->get_logger(), "Drawing paused.");
 }
 
 
