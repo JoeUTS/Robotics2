@@ -44,20 +44,10 @@ def generate_launch_description():
 
     declare_launch_rviz = DeclareLaunchArgument(
       'launch_rviz',
-      default_value='true',
+      default_value='false',
       description='Whether launch RVIZ'
     )
     launch_rviz = LaunchConfiguration('launch_rviz')
-
-    declare_rviz_config_file = DeclareLaunchArgument(
-      "rviz_config_file",
-      default_value=PathJoinSubstitution([
-        FindPackageShare('picasso_bot'),
-        "rviz", 
-        "config_test_picasso_arm.rviz"
-      ]),
-    )
-    rviz_config_file = LaunchConfiguration('rviz_config_file')
 
 
     # nodes
@@ -70,16 +60,6 @@ def generate_launch_description():
           {'use_sim_time': ur_Mock_Hardware}
       ]
     )
-
-    rviz_node = Node(
-      package="rviz2",
-      condition=IfCondition(launch_rviz),
-      executable="rviz2",
-      name="rviz2",
-      output="screen",
-      arguments=["-d", rviz_config_file],
-    )
-
 
     # Sim driver
     ur_sim_driver = IncludeLaunchDescription(
@@ -122,14 +102,15 @@ def generate_launch_description():
       launch_arguments={
           "ur_type": ur_type,
           "use_sim_time": ur_Mock_Hardware,
-          "launch_rviz": 'false'
+          "launch_rviz": launch_rviz
       }.items()
     )
 
     # Node start delay.
     delayed_start_picasso_arm = TimerAction(
       period=ur_Start_Delay,
-      actions=[picasso_arm]
+      actions=[picasso_arm],
+      cancel_on_shutdown=True
     )
 
     # Add the declare argument action
@@ -139,14 +120,12 @@ def generate_launch_description():
     ld.add_action(declare_ur_IP)
     ld.add_action(declare_ur_start_delay)
     ld.add_action(declare_ur_mock_hardware)
-    ld.add_action(declare_rviz_config_file)
     ld.add_action(declare_launch_rviz)
 
     # Launch nodes
     ld.add_action(delayed_start_picasso_arm)
     ld.add_action(ur_sim_driver)
     ld.add_action(ur_driver)
-    ld.add_action(rviz_node)
     
     ld.add_action(moveit)
     

@@ -72,7 +72,8 @@ def generate_launch_description():
 
     delayed_start_picasso_eyes = TimerAction(
       period=realSenseStartDelay,
-      actions=[picasso_eyes, rviz_node]
+      actions=[picasso_eyes, rviz_node],
+      cancel_on_shutdown=True
     )
 
     # add actions to launch

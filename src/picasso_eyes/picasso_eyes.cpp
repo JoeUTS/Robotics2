@@ -1,6 +1,53 @@
 #include "picasso_eyes.h"
 
+DynamicFrameBroadcaster::DynamicFrameBroadcaster(void) : Node("dynamic_frame_tf2_broadcaster") {
+  tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+  timer_ = this->create_wall_timer(std::chrono::milliseconds(100), 
+                            std::bind(&DynamicFrameBroadcaster::timerCallback, this));
+}
+
+void DynamicFrameBroadcaster::timerCallback(void) {
+    rclcpp::Time now = this->get_clock()->now();
+
+    geometry_msgs::msg::TransformStamped t;
+    t.header.stamp = now;
+    t.header.frame_id = "base_link";
+    t.child_frame_id = "camera_depth_frame";
+    t.transform.translation.x = 1.0;
+    t.transform.translation.y = 0.0;
+    t.transform.translation.z = 0.0;
+    t.transform.rotation.x = 0.0;
+    t.transform.rotation.y = 0.0;
+    t.transform.rotation.z = 0.0;
+    t.transform.rotation.w = 1.0;
+
+    geometry_msgs::msg::TransformStamped t2 = t;
+    t.header.frame_id = "base_link";
+    t.child_frame_id = "camera_link";
+
+    geometry_msgs::msg::TransformStamped t3 = t;
+    t.header.frame_id = "base_link";
+    t.child_frame_id = "camera_color_frame";
+
+    geometry_msgs::msg::TransformStamped t4 = t;
+    t.header.frame_id = "base_link";
+    t.child_frame_id = "camera_color_optical_frame";
+
+    tf_broadcaster_->sendTransform(t);
+    tf_broadcaster_->sendTransform(t2);
+    tf_broadcaster_->sendTransform(t3);
+    tf_broadcaster_->sendTransform(t4);
+}
+
 PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
+
+  cameraFeedEnabled_ = false;
+  imageCaptured_ = false;
+  sketchGenerated_ = false;
+  contourOrderIndex_ = 0;
+  maskGenerationActive_ = false;
+  maskReady_ = false;
+
   // subscribers
   subCamera_ = this->create_subscription<realsense2_camera_msgs::msg::RGBD>(
     "/camera/camera/rgbd", 3, std::bind(&PicassoEyes::callbackCameraReceive, 
@@ -13,36 +60,38 @@ PicassoEyes::PicassoEyes(void) : Node("picaso_eyes") {
   // services
   servCameraToggleRepub_ = this->create_service<std_srvs::srv::Trigger>("/camera_feed_toggle", 
                                           std::bind(&PicassoEyes::serviceToggleCameraFeed, 
-                                          this, std::placeholders::_1, std::placeholders::_2));
+                                          this, std::placeholders::_1, std::placeholders::_2),
+                                          ::rmw_qos_profile_default);
 
   servCaptureImage_ = this->create_service<std_srvs::srv::Trigger>("/capture_image", 
                                           std::bind(&PicassoEyes::serviceCaptureImage, 
-                                          this, std::placeholders::_1, std::placeholders::_2)); 
+                                          this, std::placeholders::_1, std::placeholders::_2),
+                                          ::rmw_qos_profile_default); 
 
   servPreviewSketch_ = this->create_service<picasso_bot::srv::GetImage>("/preview_sketch", 
                                           std::bind(&PicassoEyes::servicePreviewSketch, 
-                                          this, std::placeholders::_1, std::placeholders::_2)); 
+                                          this, std::placeholders::_1, std::placeholders::_2),
+                                          ::rmw_qos_profile_default); 
 
   servDiscardImage_ = this->create_service<std_srvs::srv::Trigger>("/discard_image", 
                                           std::bind(&PicassoEyes::serviceDiscardImage, 
-                                          this, std::placeholders::_1, std::placeholders::_2)); 
+                                          this, std::placeholders::_1, std::placeholders::_2),
+                                          ::rmw_qos_profile_default); 
 
   servGenerateToolpath_ = this->create_service<std_srvs::srv::Trigger>("/generate_toolpath", 
                                           std::bind(&PicassoEyes::serviceGenerateToolpath, 
-                                          this, std::placeholders::_1, std::placeholders::_2));
+                                          this, std::placeholders::_1, std::placeholders::_2),
+                                          ::rmw_qos_profile_default);
 
   servNextContour_ = this->create_service<picasso_bot::srv::GetPoseArray>("/next_contour", 
                                           std::bind(&PicassoEyes::serviceNextContour, 
-                                          this, std::placeholders::_1, std::placeholders::_2));
-
-  servTotalLines_ = this->create_service<picasso_bot::srv::GetTotalLines>("/total_lines", 
-                                          std::bind(&PicassoEyes::serviceGetTotalLines, 
-                                          this, std::placeholders::_1, std::placeholders::_2));
-                                          
+                                          this, std::placeholders::_1, std::placeholders::_2),
+                                          ::rmw_qos_profile_default);
 
   serviceShutdown_ = this->create_service<std_srvs::srv::Trigger>("/shutdown_node", 
                                           std::bind(&PicassoEyes::serviceShutdown, 
-                                          this, std::placeholders::_1, std::placeholders::_2));
+                                          this, std::placeholders::_1, std::placeholders::_2),
+                                          ::rmw_qos_profile_default);
 }
 
 void PicassoEyes::callbackCameraReceive(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg) {
@@ -69,7 +118,7 @@ void PicassoEyes::callbackCameraReceive(const realsense2_camera_msgs::msg::RGBD:
 }
 
 void PicassoEyes::serviceToggleCameraFeed(const std_srvs::srv::Trigger::Request::SharedPtr request,
-                                          std_srvs::srv::Trigger::Response::SharedPtr response) {
+                                          const std_srvs::srv::Trigger::Response::SharedPtr response) {
   cameraFeedEnabled_ = !cameraFeedEnabled_;
   response->success = true;
   std::string state = cameraFeedEnabled_ ? "ON" : "OFF";
@@ -77,7 +126,7 @@ void PicassoEyes::serviceToggleCameraFeed(const std_srvs::srv::Trigger::Request:
 }
 
 void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::SharedPtr request,
-                                      std_srvs::srv::Trigger::Response::SharedPtr response) {
+                                      const std_srvs::srv::Trigger::Response::SharedPtr response) {
   // Image capture
   if (imageController_ == NULL) {
     RCLCPP_ERROR(this->get_logger(), "imageController is not initialized. Has a camera image been received yet?");
@@ -112,7 +161,7 @@ void PicassoEyes::serviceCaptureImage(const std_srvs::srv::Trigger::Request::Sha
 }
 
 void PicassoEyes::servicePreviewSketch(const picasso_bot::srv::GetImage::Request::SharedPtr request, 
-                                      picasso_bot::srv::GetImage::Response::SharedPtr response) {
+                                      const picasso_bot::srv::GetImage::Response::SharedPtr response) {
   if (imageCaptured_ == false) {
     response->success = false;
     RCLCPP_INFO(this->get_logger(), "No image captured.");
@@ -126,23 +175,26 @@ void PicassoEyes::servicePreviewSketch(const picasso_bot::srv::GetImage::Request
     response->success = false;
     response->image = sensor_msgs::msg::Image();
     RCLCPP_INFO(this->get_logger(), "Failed to generate sketch.");
+    return;
     
-  } else {
-    // convert to image msg
-    cv_bridge::CvImage imgBridge = cv_bridge::CvImage(std_msgs::msg::Header(), 
-                                                      sensor_msgs::image_encodings::MONO8, 
-                                                      localImage);
-    
-    // Send responce
-    imgBridge.toImageMsg(response->image);
-    response->success = true;
-    RCLCPP_INFO(this->get_logger(), "Sketch generated successfully.");
   }
+
+  // convert to image msg
+  cv_bridge::CvImage imgBridge = cv_bridge::CvImage(std_msgs::msg::Header(), 
+                                                    sensor_msgs::image_encodings::MONO8, 
+                                                    localImage);
+  
+  // Send responce
+  imgBridge.toImageMsg(response->image);
+  response->success = true;
+  RCLCPP_INFO(this->get_logger(), "Sketch generated successfully.");
+  
 }
 
 void PicassoEyes::serviceDiscardImage(const std_srvs::srv::Trigger::Request::SharedPtr request, 
-                              std_srvs::srv::Trigger::Response::SharedPtr response) {
+                                    const std_srvs::srv::Trigger::Response::SharedPtr response) {
   capturedImage_ = cv::Mat();
+  sketchImage_ = cv::Mat();
   capturedImageMsg_ = sensor_msgs::msg::Image();
   imageCaptured_ = false;
   toolPaths_.clear();
@@ -153,26 +205,30 @@ void PicassoEyes::serviceDiscardImage(const std_srvs::srv::Trigger::Request::Sha
 }
 
 void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request::SharedPtr request,
-                                    std_srvs::srv::Trigger::Response::SharedPtr response) {
+                                    const std_srvs::srv::Trigger::Response::SharedPtr response) {
   contourOrder_.clear();
   contourOrderIndex_ = 0;
   std::string errorStart = "Cannot generate toolpath:";
-  cv::Mat localImage = capturedImage_.clone();
+  if (!sketchGenerated_) {
+      cv::Mat localImage = capturedImage_.clone();
 
-  if (localImage.empty()) {
-    RCLCPP_WARN(this->get_logger(), "%s empty image", errorStart.c_str());
-    response->success = false;
-    return;
+    if (localImage.empty()) {
+      RCLCPP_WARN(this->get_logger(), "%s empty image", errorStart.c_str());
+      response->success = false;
+      return;
+    }
+
+    generateSketch(localImage, 1, 3, 3);
   }
 
-  localImage = generateSketch(localImage, 1, 3, 3);
-  toolPaths_ = generateToolpath(localImage, true);
+  toolPaths_ = generateToolpath(sketchImage_, true);
 
   if (toolPaths_.empty()) {
     RCLCPP_WARN(this->get_logger(), "%s empty toolpaths", errorStart.c_str());
     response->success = false;
     return;
   }
+  
 
   // Perform TSP
   RCLCPP_INFO(this->get_logger(), "Solving TSP for %s toolpaths", std::to_string(toolPaths_.size()).c_str());
@@ -204,25 +260,16 @@ void PicassoEyes::serviceGenerateToolpath(const std_srvs::srv::Trigger::Request:
   return;
 }
 
-void PicassoEyes::serviceGetTotalLines(const picasso_bot::srv::GetTotalLines::Request::SharedPtr request, picasso_bot::srv::GetTotalLines::Response::SharedPtr response) {
-  std::string errorStart = "Cannot get total lines:";
-  
-  if (contourOrder_.empty()) {
-    response->amount = 0;
-    response->success = false;
-    RCLCPP_WARN(this->get_logger(), "%s no toolpath generated!", errorStart.c_str());
-
-  } else {
-    response->amount = contourOrder_.size();
-    response->success = true;
-  }
-}
-
 void PicassoEyes::serviceNextContour(const picasso_bot::srv::GetPoseArray::Request::SharedPtr request, 
-                                      picasso_bot::srv::GetPoseArray::Response::SharedPtr response) {
+                                     const picasso_bot::srv::GetPoseArray::Response::SharedPtr response) {
   std::string errorStart = "Cannot get next contour:";
+  RCLCPP_INFO(this->get_logger(), "getting contour %d / %zu", contourOrderIndex_, contourOrder_.size());
+  const int contourID = contourOrder_.at(contourOrderIndex_).first;
+  const bool direction = contourOrder_.at(contourOrderIndex_).second;
+  std::shared_ptr<Contour> contour = toolPaths_.at(contourID);
 
-  if (contourOrder_.empty() || contourOrderIndex_ == contourOrder_.size() - 1) {
+  // Validity check
+  if (contourOrder_.empty() || contourOrderIndex_ >= contourOrder_.size() - 1 || contour == NULL) {
     if (contourOrder_.empty()) {
       RCLCPP_WARN(this->get_logger(), "%s empty draw order!", errorStart.c_str());
 
@@ -231,30 +278,34 @@ void PicassoEyes::serviceNextContour(const picasso_bot::srv::GetPoseArray::Reque
     }
 
     response->poses = geometry_msgs::msg::PoseArray();
+    response->line_id = 0;
+    response->total_lines = 0;
     response->success = false;
+
+    return;
+  }
+
+  RCLCPP_INFO(this->get_logger(), "Retreived contour [%d] size: %zu", 
+                                  contourID, contour->getPoints().size());
+
+  if (direction) {
+    response->poses = contour->getPath();
     
   } else {
-    std::shared_ptr<Contour> contour = toolPaths_.at(contourOrder_.at(contourOrderIndex_).second);
-    
-    contourOrderIndex_++;
-    RCLCPP_INFO(this->get_logger(), "Next contour retrieved.");
-
-    if (toolPaths_.at(contourOrder_.at(contourOrderIndex_).first)) {
-      response->poses = contour.get()->getPath();
-      
-    } else {
-      response->poses = contour.get()->getPathBackwards();
-    }
-
-    response->line_id = contourOrderIndex_;
-    response->total_lines = toolPaths_.size();
-
-    response->success = true;
+    response->poses = contour->getPathBackwards();
   }
+
+  response->line_id = contourOrderIndex_;
+  response->total_lines = toolPaths_.size();
+  response->success = true;
+
+  contourOrderIndex_++;
+  RCLCPP_INFO(this->get_logger(), "Next contour retrieved.");
+  
 }
 
 void PicassoEyes::serviceShutdown(const std_srvs::srv::Trigger::Request::SharedPtr request,
-  std_srvs::srv::Trigger::Response::SharedPtr response) {
+                                  const std_srvs::srv::Trigger::Response::SharedPtr response) {
   response->success = true;
   RCLCPP_INFO(this->get_logger(), "%s shutting down.", this->get_name());
 
@@ -355,6 +406,9 @@ cv::Mat PicassoEyes::generateSketch(cv::Mat &image, const int blurPasses, const 
     cv::imshow("Sketch Preview", localImage);
     cv::waitKey(1);
   }
+
+  sketchImage_ = localImage.clone();
+  sketchGenerated_ = true;
 
   return localImage;
 }

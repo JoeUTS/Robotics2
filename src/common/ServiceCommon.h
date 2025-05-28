@@ -9,19 +9,28 @@
 
 template <typename ServiceT>
 /// \brief Wait for a service to be available
-void serviceWait(typename rclcpp::Client<ServiceT>::SharedPtr client) {
+bool serviceWait(typename rclcpp::Client<ServiceT>::SharedPtr client) {
     auto messagePeriod = std::chrono::milliseconds(1000);
     std::chrono::time_point<std::chrono::system_clock> lastMsg;
+    unsigned int attempts = 0;
+    const unsigned int maxAttempts = 10;
     
     while (!client->wait_for_service(std::chrono::milliseconds(200))) {
         std::chrono::duration<double> duration = std::chrono::system_clock::now() - lastMsg;
         std::chrono::milliseconds timeSinceLastMsg = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
         
         if (timeSinceLastMsg >= messagePeriod) {
-        lastMsg = std::chrono::system_clock::now();
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for service to connect");
+            lastMsg = std::chrono::system_clock::now();
+            RCLCPP_INFO(rclcpp::get_logger("service common"), "Waiting for service to connect");
+
+            if (++attempts >= maxAttempts) {
+                RCLCPP_ERROR(rclcpp::get_logger("service common"), "Service not available after %u attempts, giving up.", maxAttempts);
+                return false;
+            }
         }
     }
+
+    return true;
 }
 
 template <typename ServiceT>

@@ -29,7 +29,6 @@
   <depend>realsense2_camera_msgs</depend>
   <depend>moveit_ros_planning_interface</depend>
   <depend>ament_index_cpp</depend>
-  <depend>Qt5</depend>
 
   <test_depend>ament_cmake_ros</test_depend>
   <test_depend>ament_lint_auto</test_depend>
@@ -66,6 +65,5 @@
     <depend>realsense2_camera_msgs</depend>
     <depend>moveit_ros_planning_interface</depend>
     <depend>ament_index_cpp</depend>
-    <depend>Qt5</depend>
   </export>
 </package>

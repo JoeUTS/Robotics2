@@ -12,7 +12,9 @@ int main(int argc, char *argv[])
 
     auto main_window_node = std::make_shared<MainWindow>();
     std::thread ros_spin_thread([main_window_node]() {
-        rclcpp::spin(main_window_node);
+        rclcpp::executors::MultiThreadedExecutor exec;
+        exec.add_node(main_window_node);
+        exec.spin();
     });
 
     main_window_node->show();

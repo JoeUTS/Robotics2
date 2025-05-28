@@ -1,5 +1,5 @@
-#ifndef PICASSOEYES_H
-#define PICASSOEYES_H
+#ifndef PICASSO_EYES_H
+#define PICASSO_EYES_H
 
 #include <string>
 #include <thread>
@@ -13,11 +13,13 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/transform.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <tf2/LinearMath/Quaternion.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_ros/transform_broadcaster.h>
 #include <realsense2_camera_msgs/msg/rgbd.hpp>
 #include <opencv2/opencv.hpp>
 
@@ -34,13 +36,24 @@
 ros2 launch realsense2_camera rs_launch.py enable_rgbd:=true rgb_camera.color_profile:=640x480x30 depth_module.depth_profile:=640x480x30 enable_sync:=true align_depth.enable:=true enable_color:=true enable_depth:=true
 */
 
+class DynamicFrameBroadcaster : public rclcpp::Node {
+public:
+  DynamicFrameBroadcaster(void);
+
+private:
+  rclcpp::TimerBase::SharedPtr timer_;
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+
+  void timerCallback(void);
+};
+
 class PicassoEyes : public rclcpp::Node {
 public:
   PicassoEyes(void);
   
 private:
   // settings
-  int pubCompressQuality_ = 80;
+  const int pubCompressQuality_ = 80;
 
   // Topics
   rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr subCamera_;  // Camera RGB image subscriber.
@@ -54,30 +67,31 @@ private:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servDiscardImage_;           // Discard captured image/sketch.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr servGenerateToolpath_;       // Generate draw order.
   rclcpp::Service<picasso_bot::srv::GetPoseArray>::SharedPtr servNextContour_;    // Send next contour to draw.
-  rclcpp::Service<picasso_bot::srv::GetTotalLines>::SharedPtr servTotalLines_;    // Get total lines in image.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr serviceShutdown_;            // Shutdown node.
   
   // Class objects
-  std::shared_ptr<imageController> imageController_ = NULL;
-  std::shared_ptr<SalesmanSolver> salesmanSolver_ = NULL;
+  std::shared_ptr<imageController> imageController_;
+  std::shared_ptr<SalesmanSolver> salesmanSolver_;
 
   // --- Runtime variables ---
   // Image capture
-  bool cameraFeedEnabled_ = false;
-  bool imageCaptured_ = false;
-  sensor_msgs::msg::Image capturedImageMsg_;      // Holds copy of last captured image msg.
-  cv::Mat capturedImage_;                         // Holds copy of last captured image.
+  bool cameraFeedEnabled_;
+  bool imageCaptured_;
+  bool sketchGenerated_;
+  sensor_msgs::msg::Image capturedImageMsg_;  // Holds copy of last captured image msg.
+  cv::Mat capturedImage_;                     // Holds copy of last captured image.
+  cv::Mat sketchImage_;                       // Holds copy of last sketch image.
 
   // Mask generation
-  std::unique_ptr<std::thread> maskThread_ = NULL;
-  bool maskGenerationActive_ = false; // True when generation function is active.
-  bool maskReady_ = false;            // True when mask is ready.
-  cv::Mat mask_;                      // Generated mask.
+  std::unique_ptr<std::thread> maskThread_;
+  bool maskGenerationActive_; // True when generation function is active.
+  bool maskReady_;            // True when mask is ready.
+  cv::Mat mask_;              // Generated mask.
 
   // Toolpath generation
   std::map<int, std::shared_ptr<Contour>> toolPaths_;
   std::vector<std::pair<int, bool>> contourOrder_;
-  int contourOrderIndex_ = 0;
+  int contourOrderIndex_;
   
   
   /// @brief Updates ImageController with new camera image. If ImageController object not made, creates.
@@ -85,28 +99,32 @@ private:
   void callbackCameraReceive(const realsense2_camera_msgs::msg::RGBD::SharedPtr incomingMsg);
 
   /// @brief Service callback for toggling camera feed.
-  void serviceToggleCameraFeed(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+  void serviceToggleCameraFeed(const std_srvs::srv::Trigger::Request::SharedPtr request, 
+                              const std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /// @brief Service callback for capturing image for sketch.
-  void serviceCaptureImage(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+  void serviceCaptureImage(const std_srvs::srv::Trigger::Request::SharedPtr request, 
+                          const std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /// @brief Service callback for previewing sketch from captured image.
-  void servicePreviewSketch(const picasso_bot::srv::GetImage::Request::SharedPtr request, picasso_bot::srv::GetImage::Response::SharedPtr response);
+  void servicePreviewSketch(const picasso_bot::srv::GetImage::Request::SharedPtr request, 
+                          const picasso_bot::srv::GetImage::Response::SharedPtr response);
 
   /// @brief Service callback for discarding captured image.
-  void serviceDiscardImage(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+  void serviceDiscardImage(const std_srvs::srv::Trigger::Request::SharedPtr request, 
+                          const std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /// @brief Service callback for drawing sketch.
-  void serviceGenerateToolpath(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+  void serviceGenerateToolpath(const std_srvs::srv::Trigger::Request::SharedPtr request, 
+                              const std_srvs::srv::Trigger::Response::SharedPtr response);
 
-  /// @brief Service callback for getting total lines in image.
-  void serviceGetTotalLines(const picasso_bot::srv::GetTotalLines::Request::SharedPtr request, picasso_bot::srv::GetTotalLines::Response::SharedPtr response);
-  
   /// @brief Service callback for changing the published contour.
-  void serviceNextContour(const picasso_bot::srv::GetPoseArray::Request::SharedPtr request, picasso_bot::srv::GetPoseArray::Response::SharedPtr response);
+  void serviceNextContour(const picasso_bot::srv::GetPoseArray::Request::SharedPtr request, 
+                        const picasso_bot::srv::GetPoseArray::Response::SharedPtr response);
 
   /// @brief Service callback for shutting down node.
-  void serviceShutdown(const std_srvs::srv::Trigger::Request::SharedPtr request, std_srvs::srv::Trigger::Response::SharedPtr response);
+  void serviceShutdown(const std_srvs::srv::Trigger::Request::SharedPtr request, 
+                    const std_srvs::srv::Trigger::Response::SharedPtr response);
 
   /// @brief Compress image to specified quality.
   /// @param imageMsg Image to compress.
@@ -141,4 +159,4 @@ private:
   void generateMask(cv::Mat &image);
 };
 
-#endif // PICASSOEYES_H
+#endif // PICASSO_EYES_H

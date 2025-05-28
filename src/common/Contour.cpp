@@ -29,6 +29,8 @@ std::shared_ptr<geometry_msgs::msg::Point> Contour::getTail(void) {
 
 geometry_msgs::msg::PoseArray Contour::getPath(void) {
   geometry_msgs::msg::PoseArray poseArray;
+  poseArray.header.frame_id = "base_link"; // Set the frame to the UR base link
+  poseArray.header.stamp = rclcpp::Clock().now(); // Set the current time
   poseArray.poses.reserve(contourPoints_.size());
 
   for (auto it = contourPoints_.begin(); it != contourPoints_.end(); ++it) {
@@ -44,6 +46,8 @@ geometry_msgs::msg::PoseArray Contour::getPath(void) {
 
 geometry_msgs::msg::PoseArray Contour::getPathBackwards(void) {
   geometry_msgs::msg::PoseArray poseArray;
+  poseArray.header.frame_id = "base_link"; // Set the frame to the UR base link
+  poseArray.header.stamp = rclcpp::Clock().now(); // Set the current time
   poseArray.poses.reserve(contourPoints_.size());
 
   for (auto it = contourPoints_.rbegin(); it != contourPoints_.rend(); ++it) {
